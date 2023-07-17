@@ -94,14 +94,13 @@ impl Casync {
 impl SplitPointFinder for Casync {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let mut window: [u8; WINDOW_SIZE] = [0; WINDOW_SIZE];
-        let mut window_pos: usize = 0;
+        let mut oldest_idx: usize = 0;
 
-        let mut roll = |hash: u32, enter: u8| -> u32 {
-            let leave = window[window_pos];
-            window[window_pos] = enter;
-            window_pos = (window_pos + 1) % WINDOW_SIZE;
-            let digest = rol32(hash, 1) ^ rol32(BUZHASH_TABLE[leave as usize], WINDOW_SIZE) ^ BUZHASH_TABLE[enter as usize];
-            digest
+        let mut update_window = |enter: u8| -> u8 {
+            let leave = window[oldest_idx];
+            window[oldest_idx] = enter;
+            oldest_idx = (oldest_idx + 1) % WINDOW_SIZE;
+            leave
         };
 
         let shall_break = |hash: u32| -> bool {
@@ -111,16 +110,20 @@ impl SplitPointFinder for Casync {
         let mut hash = 0;
         let mut i = chunk_sizes.min_size() - WINDOW_SIZE;
         while i < chunk_sizes.min_size() {
-            hash = roll(hash, buf[i as usize]);
+            let enter = buf[i];
+            update_window(enter);
+            hash = rol32(hash, 1) ^ BUZHASH_TABLE[enter as usize];
             i += 1;
         }
 
         while i < buf.len() {
-            hash = roll(hash, buf[i as usize]);
-            i += 1;
             if shall_break(hash) {
                 break;
             }
+            let enter = buf[i];
+            let leave = update_window(enter);
+            hash = rol32(hash, 1) ^ rol32(BUZHASH_TABLE[leave as usize], WINDOW_SIZE) ^ BUZHASH_TABLE[enter as usize];
+            i += 1;
         }
         i
     }

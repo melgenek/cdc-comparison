@@ -104,24 +104,22 @@ impl GoogleStadiaCdc {
 
 impl SplitPointFinder for GoogleStadiaCdc {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
-        let buf_length = buf.len();
-        // Initialize the regression length to len (the end) and the regression
-        // mask to an empty bitmask (match any hash).
-        let mut rc_len = buf_length;
-        let mut rc_mask: u64 = 0;
-
         // Init hash to all 1's to avoid zero-length chunks with min_size=0.
         let mut hash = u64::MAX;
 
         // Skip the first min_size bytes, but "warm up" the rolling hash for enough
         // rounds to make sure the hash has gathered full "content history".
-        let mut i = if chunk_sizes.min_size() > HASH_BITS { chunk_sizes.min_size() - HASH_BITS } else { 0 };
+        let mut i = chunk_sizes.min_size() - HASH_BITS;
         while i < chunk_sizes.min_size() {
             hash = (hash << 1).wrapping_add(GEAR[buf[i as usize] as usize]);
             i += 1;
         }
 
-        while i < buf_length {
+        // Initialize the regression length to len (the end) and the regression
+        // mask to an empty bitmask (match any hash).
+        let mut rc_len = buf.len();
+        let mut rc_mask: u64 = 0;
+        while i < buf.len() {
             if (hash & rc_mask) == 0 {
                 if hash <= self.threshold {
                     // This hash matches the target length hash criteria, return it.

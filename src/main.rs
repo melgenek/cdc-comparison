@@ -4,6 +4,7 @@ use std::io::{BufReader};
 use std::time::Instant;
 
 use markdown_table::{Heading, MarkdownTable};
+use crate::buzhash_tmp::{Buzhash64, rol64};
 use crate::casync::Casync;
 
 use crate::chunk_stream::{ChunkData, ChunkSizes, ChunkStream, SplitPointFinder};
@@ -23,6 +24,7 @@ mod restic;
 mod chunk_stream;
 mod fixed_size;
 mod casync;
+mod buzhash_tmp;
 
 const KB: usize = 1024;
 const MB: usize = 1024 * 1024;
@@ -60,13 +62,13 @@ fn main() -> std::io::Result<()> {
             results.entry(format!("{} (concat)", name)).or_default().push(run_without_file_boundaries(*sizes, &cdc)?);
             println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
 
-            let start = Instant::now();
-            results.entry(format!("{} (concat split)", name)).or_default().push(run_without_file_boundaries_split_sorted(*sizes, &cdc)?);
-            println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
-
-            let start = Instant::now();
-            results.entry(format!("{} (files)", name)).or_default().push(run_with_file_boundaries(*sizes, &cdc)?);
-            println!("With file boundaries is done in {}ms", start.elapsed().as_millis());
+            // let start = Instant::now();
+            // results.entry(format!("{} (concat split)", name)).or_default().push(run_without_file_boundaries_split_sorted(*sizes, &cdc)?);
+            // println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
+            //
+            // let start = Instant::now();
+            // results.entry(format!("{} (files)", name)).or_default().push(run_with_file_boundaries(*sizes, &cdc)?);
+            // println!("With file boundaries is done in {}ms", start.elapsed().as_millis());
         }
     }
 
@@ -95,8 +97,8 @@ fn run_without_file_boundaries(chunk_sizes: ChunkSizes, cdc: &Box<dyn SplitPoint
         }
         Ok(())
     };
-    process_directory("data/postgres-15.2-extracted")?;
-    process_directory("data/postgres-15.3-extracted")?;
+    process_directory("extracted/postgres-15.2-extracted")?;
+    process_directory("extracted/postgres-15.3-extracted")?;
     Ok(cdc_result)
 }
 
@@ -113,8 +115,8 @@ fn run_without_file_boundaries_split_sorted(chunk_sizes: ChunkSizes, cdc: &Box<d
         }
         Ok(())
     };
-    process_directory("data/postgres-15.2-extracted")?;
-    process_directory("data/postgres-15.3-extracted")?;
+    process_directory("extracted/postgres-15.2-extracted")?;
+    process_directory("extracted/postgres-15.3-extracted")?;
     Ok(cdc_result)
 }
 
@@ -131,8 +133,8 @@ fn run_with_file_boundaries(chunk_sizes: ChunkSizes, cdc: &Box<dyn SplitPointFin
         }
         Ok(())
     };
-    process_directory("data/postgres-15.2-extracted")?;
-    process_directory("data/postgres-15.3-extracted")?;
+    process_directory("extracted/postgres-15.2-extracted")?;
+    process_directory("extracted/postgres-15.3-extracted")?;
     Ok(cdc_result)
 }
 

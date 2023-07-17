@@ -71,9 +71,9 @@ pub struct ResticCdc {
 }
 
 impl ResticCdc {
-    pub fn new(pol: Pol, sizes: ChunkSizes) -> Self {
-        assert!(sizes.avg_size() <= u32::MAX as usize);
-        let bits = logarithm2(sizes.avg_size() as u32);
+    pub fn new(pol: Pol, chunk_sizes: ChunkSizes) -> Self {
+        assert!(chunk_sizes.avg_size() <= u32::MAX as usize);
+        let bits = logarithm2(chunk_sizes.avg_size() as u32);
         let split_mask = (1 << bits) - 1;
         let pol_shift = (pol.deg() - 8) as u64;
         if pol_shift > 53 - 8 {
@@ -87,13 +87,13 @@ impl ResticCdc {
 impl SplitPointFinder for ResticCdc {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let mut window: [u8; WINDOW_SIZE] = [0; WINDOW_SIZE];
-        let mut window_pos: usize = 0;
+        let mut oldest_idx: usize = 0;
 
         let mut slide = |digest: u64, b: u8| -> u64 {
-            let out = window[window_pos];
-            window[window_pos] = b;
+            let out = window[oldest_idx];
+            window[oldest_idx] = b;
+            oldest_idx = (oldest_idx + 1) % WINDOW_SIZE;
             let digest = digest ^ self.tables.out[out as usize].value();
-            window_pos = (window_pos + 1) % WINDOW_SIZE;
             let digest = update_digest(digest, self.pol_shift, &self.tables, b);
             digest
         };
@@ -101,17 +101,18 @@ impl SplitPointFinder for ResticCdc {
 
         let mut i = chunk_sizes.min_size() - WINDOW_SIZE;
 
+        // todo the initialisation here might be wrong
         while i < chunk_sizes.min_size() {
             digest = slide(digest, buf[i as usize]);
             i += 1;
         }
 
         while i < buf.len() {
-            digest = slide(digest, buf[i as usize]);
-            i += 1;
             if (digest & self.split_mask) == 0 {
                 break;
             }
+            digest = slide(digest, buf[i as usize]);
+            i += 1;
         }
         i
     }
