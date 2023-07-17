@@ -34,16 +34,16 @@ type ChunkSizesToCDC = Box<dyn Fn(ChunkSizes) -> (String, Box<dyn SplitPointFind
 fn main() -> std::io::Result<()> {
     let chunk_sizes = vec![
         ChunkSizes::new(16 * KB, 32 * KB, 64 * KB),
-        ChunkSizes::new(32 * KB, 64 * KB, 128 * KB),
-        ChunkSizes::new(16 * KB, 64 * KB, 256 * KB),
-        ChunkSizes::new(128 * KB, 256 * KB, 512 * KB),
-        ChunkSizes::new(512 * KB, 1 * MB, 2 * MB),
-        ChunkSizes::new(512 * KB, 1 * MB, 8 * MB),
-        ChunkSizes::new(1 * MB, 2 * MB, 4 * MB),
-        ChunkSizes::new(2 * MB, 4 * MB, 8 * MB),
-        ChunkSizes::new(2 * MB, 8 * MB, 16 * MB),
-        ChunkSizes::new(4 * MB, 8 * MB, 16 * MB),
-        ChunkSizes::new(6 * MB, 8 * MB, 10 * MB),
+        // ChunkSizes::new(32 * KB, 64 * KB, 128 * KB),
+        // ChunkSizes::new(16 * KB, 64 * KB, 256 * KB),
+        // ChunkSizes::new(128 * KB, 256 * KB, 512 * KB),
+        // ChunkSizes::new(512 * KB, 1 * MB, 2 * MB),
+        // ChunkSizes::new(512 * KB, 1 * MB, 8 * MB),
+        // ChunkSizes::new(1 * MB, 2 * MB, 4 * MB),
+        // ChunkSizes::new(2 * MB, 4 * MB, 8 * MB),
+        // ChunkSizes::new(2 * MB, 8 * MB, 16 * MB),
+        // ChunkSizes::new(4 * MB, 8 * MB, 16 * MB),
+        // ChunkSizes::new(6 * MB, 8 * MB, 10 * MB),
     ];
     let cdc_builders: Vec<ChunkSizesToCDC> = vec![
         Box::new(|_| { ("Fixed size".to_string(), Box::new(FixedSize::new())) }),
@@ -58,14 +58,15 @@ fn main() -> std::io::Result<()> {
         for sizes in chunk_sizes.iter() {
             let (name, cdc) = builder(*sizes);
             println!("{}. Sizes: {:?}", name, sizes);
-            let start = Instant::now();
-            results.entry(format!("{} (concat)", name)).or_default().push(run_without_file_boundaries(*sizes, &cdc)?);
-            println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
 
             // let start = Instant::now();
-            // results.entry(format!("{} (concat split)", name)).or_default().push(run_without_file_boundaries_split_sorted(*sizes, &cdc)?);
+            // results.entry(format!("{} (concat)", name)).or_default().push(run_without_file_boundaries(*sizes, &cdc)?);
             // println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
-            //
+
+            let start = Instant::now();
+            results.entry(format!("{} (concat split)", name)).or_default().push(run_without_file_boundaries_split_sorted(*sizes, &cdc)?);
+            println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
+
             // let start = Instant::now();
             // results.entry(format!("{} (files)", name)).or_default().push(run_with_file_boundaries(*sizes, &cdc)?);
             // println!("With file boundaries is done in {}ms", start.elapsed().as_millis());

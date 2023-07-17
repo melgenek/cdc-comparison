@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::ops::{Add, BitAnd, BitOr, Div, Mul, Rem, Shl};
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha20Rng;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Pol(u64);
@@ -9,8 +10,13 @@ impl Pol {
     pub const ZERO: Pol = Pol(0);
 
     pub fn generate_random() -> Pol {
+        Self::generate_random_from_seed(1)
+    }
+
+    pub fn generate_random_from_seed(seed: u64) -> Pol {
+        let mut rng = ChaCha20Rng::seed_from_u64(seed);
         for _ in 0..1_000_000 {
-            let mut f: Pol = Pol(rand::thread_rng().gen::<u64>());
+            let mut f: Pol = Pol(rng.gen::<u64>());
             // mask away bits above bit 53
             f = f & Pol((1 << 54) - 1);
             // set highest and lowest bit so that the degree is 53 and the

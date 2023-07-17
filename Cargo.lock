@@ -28,6 +28,7 @@ dependencies = [
  "fastcdc",
  "markdown-table",
  "rand",
+ "rand_chacha",
  "ring",
  "walkdir",
 ]

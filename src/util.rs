@@ -18,7 +18,7 @@ pub fn read_files_in_dir_split_sorted<P: AsRef<Path>>(dir: P, size_threshold: us
     let (small_files, big_files): (Vec<DirEntry>, Vec<DirEntry>) = WalkDir::new(dir)
         .into_iter().filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .partition(|e| e.metadata().unwrap().len() < size_threshold as u64);
+        .partition(|e| e.metadata().unwrap().len() <= size_threshold as u64);
 
     let mut small_files: Vec<PathBuf> = small_files.into_iter().map(|e| e.into_path()).collect();
     small_files.sort();

@@ -4,14 +4,6 @@ use crate::util::logarithm2;
 
 const WINDOW_SIZE: usize = 64;
 
-fn update_digest(digest: u64, pol_shift: u64, tables: &Tables, b: u8) -> u64 {
-    let index = digest >> pol_shift;
-    let digest = digest << 8;
-    let digest = digest | (b as u64);
-    let digest = digest ^ tables.mods[index as usize].value();
-    digest
-}
-
 struct Tables {
     out: [Pol; 256],
     mods: [Pol; 256],
@@ -57,10 +49,10 @@ impl Tables {
         Tables { out, mods }
     }
 
-    fn append_byte(hash: Pol, b: u8, pol: Pol) -> Pol {
-        let hash = hash << 8;
-        let hash = hash | Pol::from(b);
-        hash % pol
+    fn append_byte(digest: Pol, b: u8, pol: Pol) -> Pol {
+        let digest = digest << 8;
+        let digest = digest | Pol::from(b);
+        digest % pol
     }
 }
 
@@ -82,6 +74,14 @@ impl ResticCdc {
         let tables = Tables::new(pol);
         ResticCdc { tables, pol_shift, split_mask }
     }
+
+    fn update_digest(&self, digest: u64, b: u8) -> u64 {
+        let index = digest >> self.pol_shift;
+        let digest = digest << 8;
+        let digest = digest | (b as u64);
+        let digest = digest ^ self.tables.mods[index as usize].value();
+        digest
+    }
 }
 
 impl SplitPointFinder for ResticCdc {
@@ -89,19 +89,18 @@ impl SplitPointFinder for ResticCdc {
         let mut window: [u8; WINDOW_SIZE] = [0; WINDOW_SIZE];
         let mut oldest_idx: usize = 0;
 
-        let mut slide = |digest: u64, b: u8| -> u64 {
-            let out = window[oldest_idx];
-            window[oldest_idx] = b;
+        let mut slide = |digest: u64, new_byte: u8| -> u64 {
+            let old_byte = window[oldest_idx];
+            window[oldest_idx] = new_byte;
             oldest_idx = (oldest_idx + 1) % WINDOW_SIZE;
-            let digest = digest ^ self.tables.out[out as usize].value();
-            let digest = update_digest(digest, self.pol_shift, &self.tables, b);
+            let digest = digest ^ self.tables.out[old_byte as usize].value();
+            let digest = self.update_digest(digest, new_byte);
             digest
         };
-        let mut digest = slide(0, 1);
 
+        let mut digest = slide(0, 1);
         let mut i = chunk_sizes.min_size() - WINDOW_SIZE;
 
-        // todo the initialisation here might be wrong
         while i < chunk_sizes.min_size() {
             digest = slide(digest, buf[i as usize]);
             i += 1;
