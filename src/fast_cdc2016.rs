@@ -1,5 +1,5 @@
 use crate::chunk_sizes::ChunkSizes;
-use crate::chunk_stream::SplitPointFinder;
+use crate::chunker::Chunker;
 use crate::util::logarithm2;
 
 pub const MINIMUM_MIN: usize = 64;
@@ -133,7 +133,7 @@ impl FastCdc2016 {
     }
 }
 
-impl SplitPointFinder for FastCdc2016 {
+impl Chunker for FastCdc2016 {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let buf_length = buf.len();
         let center = if buf_length < chunk_sizes.avg_size() { buf_length } else { chunk_sizes.avg_size() };

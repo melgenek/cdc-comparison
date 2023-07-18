@@ -1,10 +1,6 @@
 use crate::chunk_sizes::ChunkSizes;
-use std::fmt;
 use std::io::Read;
-
-pub trait SplitPointFinder {
-    fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize;
-}
+use crate::chunker::Chunker;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Chunk {
@@ -16,7 +12,7 @@ pub struct Chunk {
     pub data: Vec<u8>,
 }
 
-pub struct ChunkStream<'a, R: Read> {
+pub struct ChunkStream<R: Read> {
     /// Buffer of data from source for finding cut points.
     buffer: Vec<u8>,
     /// Number of relevant bytes in the `buffer`.
@@ -27,12 +23,12 @@ pub struct ChunkStream<'a, R: Read> {
     processed: usize,
     /// True when the source produces no more data.
     eof: bool,
-    split_point_finder: &'a Box<dyn SplitPointFinder>,
+    split_point_finder: Box<dyn Chunker>,
     chunk_sizes: ChunkSizes,
 }
 
-impl<'a, R: Read> ChunkStream<'a, R> {
-    pub fn new(source: R, split_point_finder: &'a Box<dyn SplitPointFinder>, chunk_sizes: ChunkSizes) -> Self {
+impl<R: Read> ChunkStream<R> {
+    pub fn new(source: R, split_point_finder: Box<dyn Chunker>, chunk_sizes: ChunkSizes) -> Self {
         Self {
             buffer: vec![0_u8; chunk_sizes.max_size() as usize],
             length: 0,
@@ -67,7 +63,7 @@ impl<'a, R: Read> ChunkStream<'a, R> {
     }
 }
 
-impl<'a, R: Read> Iterator for ChunkStream<'a, R> {
+impl<R: Read> Iterator for ChunkStream<R> {
     type Item = std::io::Result<Chunk>;
 
     fn next(&mut self) -> Option<std::io::Result<Chunk>> {

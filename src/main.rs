@@ -3,12 +3,12 @@ use std::fs::File;
 use std::io::BufReader;
 use std::time::Instant;
 
-use crate::buzhash_tmp::{rol64, Buzhash64};
 use crate::casync::Casync;
 use crate::chunk_sizes::ChunkSizes;
 use markdown_table::{Heading, MarkdownTable};
 
-use crate::chunk_stream::{Chunk, ChunkStream, SplitPointFinder};
+use crate::chunk_stream::{Chunk, ChunkStream};
+use crate::chunker::Chunker;
 use crate::fast_cdc2016::FastCdc2016;
 use crate::fixed_size::FixedSize;
 use crate::google_stadia_cdc::GoogleStadiaCdc;
@@ -21,6 +21,7 @@ mod buzhash_tmp;
 mod casync;
 mod chunk_sizes;
 mod chunk_stream;
+mod chunker;
 mod fast_cdc2016;
 mod fixed_size;
 mod google_stadia_cdc;
@@ -31,7 +32,8 @@ mod util;
 const KB: usize = 1024;
 const MB: usize = 1024 * 1024;
 
-type ChunkSizesToCDC = Box<dyn Fn(ChunkSizes) -> (String, Box<dyn SplitPointFinder>)>;
+type ChunkerBuilder = Box<dyn Fn(ChunkSizes) -> Box<dyn Chunker>>;
+type NamedChunker = (String, ChunkerBuilder);
 
 fn main() -> std::io::Result<()> {
     let chunk_sizes = vec![
@@ -47,34 +49,36 @@ fn main() -> std::io::Result<()> {
         // ChunkSizes::new(4 * MB, 8 * MB, 16 * MB),
         // ChunkSizes::new(6 * MB, 8 * MB, 10 * MB),
     ];
-    let cdc_builders: Vec<ChunkSizesToCDC> = vec![
-        Box::new(|_| ("Fixed size".to_string(), Box::new(FixedSize::new()))),
-        Box::new(|sizes| ("FastCdc2016".to_string(), Box::new(FastCdc2016::new(sizes, 2)))),
-        Box::new(|sizes| ("Restic".to_string(), Box::new(ResticCdc::new(Pol::generate_random(), sizes)))),
-        Box::new(|sizes| ("StadiaCdc".to_string(), Box::new(GoogleStadiaCdc::new(sizes)))),
-        Box::new(|sizes| ("Casync".to_string(), Box::new(Casync::new(sizes)))),
+    let cdc_builders: Vec<NamedChunker> = vec![
+        ("Fixed size".to_string(), Box::new(|_| Box::new(FixedSize::new()))),
+        ("FastCdc2016".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 2)))),
+        ("Restic".to_string(), Box::new(|sizes| Box::new(ResticCdc::new(Pol::generate_random(), sizes)))),
+        ("StadiaCdc".to_string(), Box::new(|sizes| Box::new(GoogleStadiaCdc::new(sizes)))),
+        ("Casync".to_string(), Box::new(|sizes| Box::new(Casync::new(sizes)))),
     ];
 
     let mut results: BTreeMap<String, Vec<CdcResult>> = BTreeMap::new();
-    for builder in cdc_builders {
+    for (name, builder) in cdc_builders {
         for sizes in chunk_sizes.iter() {
-            let (name, cdc) = builder(*sizes);
             println!("{}. Sizes: {:?}", name, sizes);
 
-            // let start = Instant::now();
-            // results.entry(format!("{} (concat)", name)).or_default().push(run_without_file_boundaries(*sizes, &cdc)?);
-            // println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
+            let start = Instant::now();
+            results
+                .entry(format!("{} (concat)", name))
+                .or_default()
+                .push(run_without_file_boundaries(*sizes, &builder)?);
+            println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
 
             let start = Instant::now();
             results
                 .entry(format!("{} (concat split)", name))
                 .or_default()
-                .push(run_without_file_boundaries_split_sorted(*sizes, &cdc)?);
+                .push(run_without_file_boundaries_split_sorted(*sizes, &builder)?);
             println!("Without file boundaries is done in {}ms", start.elapsed().as_millis());
 
-            // let start = Instant::now();
-            // results.entry(format!("{} (files)", name)).or_default().push(run_with_file_boundaries(*sizes, &cdc)?);
-            // println!("With file boundaries is done in {}ms", start.elapsed().as_millis());
+            let start = Instant::now();
+            results.entry(format!("{} (files)", name)).or_default().push(run_with_file_boundaries(*sizes, &builder)?);
+            println!("With file boundaries is done in {}ms", start.elapsed().as_millis());
         }
     }
 
@@ -92,11 +96,11 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn run_without_file_boundaries(chunk_sizes: ChunkSizes, cdc: &Box<dyn SplitPointFinder>) -> std::io::Result<CdcResult> {
+fn run_without_file_boundaries(chunk_sizes: ChunkSizes, splitter: &ChunkerBuilder) -> std::io::Result<CdcResult> {
     let mut cdc_result = CdcResult::new();
     let mut process_directory = |dir: &str| -> std::io::Result<()> {
         let source = BufReader::with_capacity(16 * MB, MultiFileRead::new(read_files_in_dir_sorted(dir))?);
-        for result in ChunkStream::new(source, cdc, chunk_sizes) {
+        for result in ChunkStream::new(source, splitter(chunk_sizes), chunk_sizes) {
             let chunk = result?;
             cdc_result.append_chunk(chunk);
         }
@@ -109,7 +113,7 @@ fn run_without_file_boundaries(chunk_sizes: ChunkSizes, cdc: &Box<dyn SplitPoint
 
 fn run_without_file_boundaries_split_sorted(
     chunk_sizes: ChunkSizes,
-    cdc: &Box<dyn SplitPointFinder>,
+    splitter: &ChunkerBuilder,
 ) -> std::io::Result<CdcResult> {
     let mut cdc_result = CdcResult::new();
     let mut process_directory = |dir: &str| -> std::io::Result<()> {
@@ -117,7 +121,7 @@ fn run_without_file_boundaries_split_sorted(
             16 * MB,
             MultiFileRead::new(read_files_in_dir_split_sorted(dir, chunk_sizes.max_size()))?,
         );
-        for result in ChunkStream::new(source, cdc, chunk_sizes) {
+        for result in ChunkStream::new(source, splitter(chunk_sizes), chunk_sizes) {
             let chunk = result?;
             cdc_result.append_chunk(chunk);
         }
@@ -128,13 +132,13 @@ fn run_without_file_boundaries_split_sorted(
     Ok(cdc_result)
 }
 
-fn run_with_file_boundaries(chunk_sizes: ChunkSizes, cdc: &Box<dyn SplitPointFinder>) -> std::io::Result<CdcResult> {
+fn run_with_file_boundaries(chunk_sizes: ChunkSizes, splitter: &ChunkerBuilder) -> std::io::Result<CdcResult> {
     let mut cdc_result = CdcResult::new();
     let mut process_directory = |dir: &str| -> std::io::Result<()> {
         let files = read_files_in_dir_sorted(dir);
         for file in files {
             let source = File::open(file)?;
-            for result in ChunkStream::new(source, cdc, chunk_sizes) {
+            for result in ChunkStream::new(source, splitter(chunk_sizes), chunk_sizes) {
                 let chunk = result?;
                 cdc_result.append_chunk(chunk);
             }

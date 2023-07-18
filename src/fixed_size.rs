@@ -1,5 +1,5 @@
 use crate::chunk_sizes::ChunkSizes;
-use crate::chunk_stream::SplitPointFinder;
+use crate::chunker::Chunker;
 
 pub struct FixedSize;
 
@@ -9,7 +9,7 @@ impl FixedSize {
     }
 }
 
-impl SplitPointFinder for FixedSize {
+impl Chunker for FixedSize {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         chunk_sizes.avg_size().min(buf.len())
     }

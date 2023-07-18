@@ -1,5 +1,5 @@
 use crate::chunk_sizes::ChunkSizes;
-use crate::chunk_stream::SplitPointFinder;
+use crate::chunker::Chunker;
 
 #[rustfmt::skip]
 const GEAR: [u64; 256] = [
@@ -103,7 +103,7 @@ impl GoogleStadiaCdc {
     }
 }
 
-impl SplitPointFinder for GoogleStadiaCdc {
+impl Chunker for GoogleStadiaCdc {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         // Init hash to all 1's to avoid zero-length chunks with min_size=0.
         let mut hash = u64::MAX;

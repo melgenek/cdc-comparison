@@ -1,6 +1,6 @@
 use crate::chunk_sizes::ChunkSizes;
-use crate::chunk_stream::SplitPointFinder;
 use crate::restic::polynomial::Pol;
+use crate::chunker::Chunker;
 use crate::util::logarithm2;
 
 const WINDOW_SIZE: usize = 64;
@@ -85,7 +85,7 @@ impl ResticCdc {
     }
 }
 
-impl SplitPointFinder for ResticCdc {
+impl Chunker for ResticCdc {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let mut window: [u8; WINDOW_SIZE] = [0; WINDOW_SIZE];
         let mut oldest_idx: usize = 0;
@@ -120,14 +120,16 @@ impl SplitPointFinder for ResticCdc {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+    use std::io::Read;
+
     use crate::chunk_sizes::ChunkSizes;
-    use crate::chunk_stream::{ChunkStream, SplitPointFinder};
+    use crate::chunk_stream::ChunkStream;
     use crate::restic::chunker::ResticCdc;
     use crate::restic::polynomial::Pol;
+    use crate::chunker::Chunker;
     use crate::util::sha256;
     use crate::{KB, MB};
-    use std::fs::File;
-    use std::io::{BufReader, Read};
 
     #[test]
     pub fn should_split_random_data1() -> std::io::Result<()> {
@@ -219,18 +221,21 @@ mod tests {
     }
 
     fn verify_chunks_for_data<R: Read>(input: R, chunks: Vec<(usize, &str)>, chunk_sizes: ChunkSizes) {
+        let expected_chunks_count = chunks.len();
         let pol = Pol::from(0x3DA3358B4DC173 as u64);
-        let restic: Box<dyn SplitPointFinder> = Box::new(ResticCdc::new(pol, chunk_sizes));
-        let mut chunker = ChunkStream::new(input, &restic, chunk_sizes);
+        let restic: Box<dyn Chunker> = Box::new(ResticCdc::new(pol, chunk_sizes));
+        let mut chunker = ChunkStream::new(input, restic, chunk_sizes);
 
-        let mut pos = 0;
-        let mut count = 0;
+        let mut offset = 0;
+        let mut chunk_count = 0;
         for (expected_length, expected_sha) in chunks {
             let chunk = chunker.next().unwrap().unwrap();
-            assert_eq!(chunk.offset, pos);
+            assert_eq!(chunk.offset, offset);
             assert_eq!(chunk.length, expected_length);
             assert_eq!(sha256(&chunk.data), expected_sha);
-            pos += chunk.length;
+            offset += chunk.length;
+            chunk_count += 1;
         }
+        assert_eq!(expected_chunks_count, chunk_count);
     }
 }

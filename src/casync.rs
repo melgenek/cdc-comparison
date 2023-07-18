@@ -1,5 +1,5 @@
 use crate::chunk_sizes::ChunkSizes;
-use crate::chunk_stream::SplitPointFinder;
+use crate::chunker::Chunker;
 
 #[rustfmt::skip]
 const BUZHASH_TABLE: [u32; 256] = [
@@ -93,7 +93,7 @@ impl Casync {
     }
 }
 
-impl SplitPointFinder for Casync {
+impl Chunker for Casync {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let mut window: [u8; WINDOW_SIZE] = [0; WINDOW_SIZE];
         let mut oldest_idx: usize = 0;

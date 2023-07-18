@@ -1,5 +1,5 @@
 use crate::chunk_sizes::ChunkSizes;
-use crate::chunk_stream::SplitPointFinder;
+use crate::chunker::Chunker;
 use crate::util::logarithm2;
 
 #[rustfmt::skip]
@@ -116,7 +116,7 @@ impl Buzhash64 {
     }
 }
 
-impl SplitPointFinder for Buzhash64 {
+impl Chunker for Buzhash64 {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let mut window: [u8; WINDOW_SIZE] = [0; WINDOW_SIZE];
         let mut oldest_idx: usize = 0;
