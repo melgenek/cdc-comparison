@@ -37,7 +37,7 @@ impl Pol {
         63 as i32 - self.0.leading_zeros() as i32
     }
 
-    pub fn gcd(x: Pol, f: Pol) -> Pol {
+    fn gcd(x: Pol, f: Pol) -> Pol {
         if f == 0 {
             x
         } else if x == 0 {
@@ -235,7 +235,7 @@ mod tests {
     use super::Pol;
 
     #[test]
-    fn test_deg() {
+    fn should_get_degree() {
         assert_eq!(Pol(0).deg(), -1);
         assert_eq!(Pol(1).deg(), 0);
         for i in 0..64 {
@@ -246,7 +246,14 @@ mod tests {
     }
 
     #[test]
-    fn test_pol_div() {
+    fn should_add() {
+        assert_eq!(Pol(23) + Pol(16), 23 ^ 16);
+        assert_eq!(Pol(0x9a7e30d1e855e0a0) + Pol(0x670102a1f4bcd414), 0xfd7f32701ce934b4);
+        assert_eq!(Pol(0x9a7e30d1e855e0a0) + Pol(0x9a7e30d1e855e0a0), 0);
+    }
+
+    #[test]
+    fn should_divide() {
         assert_eq!(Pol(10) / Pol(50), 0);
         assert_eq!(Pol(0) / Pol(1), 0);
         assert_eq!(Pol(0b101101000) / Pol(0b1010), 0b100100);
@@ -257,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pol_rem() {
+    fn should_find_remainder() {
         assert_eq!(Pol(10) % Pol(50), 10);
         assert_eq!(Pol(0) % Pol(1), 0);
         assert_eq!(Pol(0b101101001) % Pol(0b1010), 0b1);
@@ -268,7 +275,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mul() {
+    fn should_multiply() {
         let operands_and_result = [
             (Pol(1), Pol(2), Pol(2)),
             (Pol(0b1101), Pol(0b10), Pol(0b11010)),
@@ -289,19 +296,19 @@ mod tests {
     }
 
     #[test]
-    fn test_mul_mod() {
-        assert_eq!(Pol(0x1230).mul_mod(Pol(0x230), Pol(0x55)), 0x22);
-        assert_eq!(Pol(0x0eae8c07dbbb3026).mul_mod(Pol(0xd5d6db9de04771de), Pol(0xdd2bda3b77c9)), 0x425ae8595b7a);
-    }
-
-    #[test]
     #[should_panic]
     fn should_panic_when_mul_overflow() {
         println!("{:?}", Pol(1 << 63) * Pol(2));
     }
 
     #[test]
-    fn test_irreducible() {
+    fn should_mul_mod() {
+        assert_eq!(Pol(0x1230).mul_mod(Pol(0x230), Pol(0x55)), 0x22);
+        assert_eq!(Pol(0x0eae8c07dbbb3026).mul_mod(Pol(0xd5d6db9de04771de), Pol(0xdd2bda3b77c9)), 0x425ae8595b7a);
+    }
+
+    #[test]
+    fn should_check_if_irreducible() {
         assert!(!Pol(0x38f1e565e288df).is_irreducible());
         assert!(Pol(0x3DA3358B4DC173).is_irreducible());
         assert!(!Pol(0x30a8295b9d5c91).is_irreducible());
@@ -330,6 +337,21 @@ mod tests {
 
     #[test]
     fn should_generate_random() {
-        println!("{:?}", Pol::generate_random());
+        assert!(Pol::generate_random() > 0);
+    }
+
+    #[test]
+    fn should_find_gcd() {
+        assert_eq!(Pol::gcd(Pol(10), Pol(50)), 2);
+        assert_eq!(Pol::gcd(Pol(0), Pol(1)), 1);
+        assert_eq!(Pol::gcd(Pol(0b101101001), Pol(0b1010)), 1);
+        assert_eq!(Pol::gcd(Pol(2), Pol(2)), 2);
+        assert_eq!(Pol::gcd(Pol(0b1010), Pol(0b11)), 0b11);
+        assert_eq!(Pol::gcd(Pol(0x8000000000000000), Pol(0x8000000000000000)), 0x8000000000000000);
+        assert_eq!(Pol::gcd(Pol(0b1100), Pol(0b101)), 0b11);
+        assert_eq!(Pol::gcd(Pol(0b1100001111), Pol(0b10011)), 0b10011);
+        assert_eq!(Pol::gcd(Pol(0x3da3358b4dc173), Pol(0x3da3358b4dc173)), 0x3da3358b4dc173);
+        assert_eq!(Pol::gcd(Pol(0x3da3358b4dc173), Pol(0x230d2259defd)), 1);
+        assert_eq!(Pol::gcd(Pol(0x230d2259defd), Pol(0x51b492b3eff2)), 0b10011);
     }
 }
