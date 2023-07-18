@@ -1,4 +1,5 @@
-use crate::chunk_stream::{ChunkSizes, SplitPointFinder};
+use crate::chunk_sizes::ChunkSizes;
+use crate::chunk_stream::SplitPointFinder;
 
 #[rustfmt::skip]
 const GEAR: [u64; 256] = [
@@ -137,6 +138,10 @@ impl SplitPointFinder for GoogleStadiaCdc {
             i += 1;
         }
 
-        if (hash & rc_mask) > 0 { rc_len } else { i }
+        if (hash & rc_mask) > 0 {
+            rc_len
+        } else {
+            i
+        }
     }
 }

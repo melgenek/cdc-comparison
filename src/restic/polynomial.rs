@@ -1,7 +1,7 @@
-use std::cmp::Ordering;
-use std::ops::{Add, BitAnd, BitOr, Div, Mul, Rem, Shl};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
+use std::cmp::Ordering;
+use std::ops::{Add, BitAnd, BitOr, Div, Mul, Rem, Shl};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Pol(u64);
@@ -88,7 +88,6 @@ impl Pol {
         }
         true
     }
-
 
     // DivMod returns x / d = q, and remainder r,
     // see https://en.wikipedia.org/wiki/Division_algorithm
@@ -231,10 +230,9 @@ impl BitOr for Pol {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::{Pol};
+    use super::Pol;
 
     #[test]
     fn test_deg() {
@@ -279,7 +277,7 @@ mod tests {
             (Pol(0b1010), Pol(0b100100), Pol(0b101101000)),
             (Pol(0b100), Pol(0b11), Pol(0b1100)),
             (Pol(0b11), Pol(0b110101), Pol(0b1011111)),
-            (Pol(0b10011), Pol(0b110101), Pol(0b1100001111))
+            (Pol(0b10011), Pol(0b110101), Pol(0b1100001111)),
         ];
 
         for (a, b, result) in operands_and_result {
@@ -295,7 +293,6 @@ mod tests {
         assert_eq!(Pol(0x1230).mul_mod(Pol(0x230), Pol(0x55)), 0x22);
         assert_eq!(Pol(0x0eae8c07dbbb3026).mul_mod(Pol(0xd5d6db9de04771de), Pol(0xdd2bda3b77c9)), 0x425ae8595b7a);
     }
-
 
     #[test]
     #[should_panic]

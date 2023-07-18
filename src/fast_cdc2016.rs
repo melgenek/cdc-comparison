@@ -1,4 +1,5 @@
-use crate::chunk_stream::{ChunkSizes, SplitPointFinder};
+use crate::chunk_sizes::ChunkSizes;
+use crate::chunk_stream::SplitPointFinder;
 use crate::util::logarithm2;
 
 pub const MINIMUM_MIN: usize = 64;
@@ -125,18 +126,17 @@ impl FastCdc2016 {
         let bits = logarithm2(chunk_sizes.avg_size() as u32);
         assert!(bits - normalization_level >= 5);
         assert!(bits + normalization_level <= 26);
-        Self { mask_s: MASKS[(bits + normalization_level) as usize], mask_l: MASKS[(bits - normalization_level) as usize] }
+        Self {
+            mask_s: MASKS[(bits + normalization_level) as usize],
+            mask_l: MASKS[(bits - normalization_level) as usize],
+        }
     }
 }
 
 impl SplitPointFinder for FastCdc2016 {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let buf_length = buf.len();
-        let center = if buf_length < chunk_sizes.avg_size() {
-            buf_length
-        } else {
-            chunk_sizes.avg_size()
-        };
+        let center = if buf_length < chunk_sizes.avg_size() { buf_length } else { chunk_sizes.avg_size() };
         let mut index = chunk_sizes.min_size();
 
         // Paraphrasing from the paper: Use the mask with more 1 bits for the

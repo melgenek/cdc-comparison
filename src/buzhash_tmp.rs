@@ -1,4 +1,5 @@
-use crate::chunk_stream::{ChunkSizes, SplitPointFinder};
+use crate::chunk_sizes::ChunkSizes;
+use crate::chunk_stream::SplitPointFinder;
 use crate::util::logarithm2;
 
 #[rustfmt::skip]

@@ -10,10 +10,7 @@ pub struct MultiFileRead {
 impl MultiFileRead {
     pub fn new(mut files: Vec<PathBuf>) -> std::io::Result<MultiFileRead> {
         files.reverse();
-        let mut instance = MultiFileRead {
-            files,
-            current_file: None,
-        };
+        let mut instance = MultiFileRead { files, current_file: None };
         instance.update_current_file()?;
         Ok(instance)
     }

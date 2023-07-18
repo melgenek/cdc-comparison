@@ -6,7 +6,8 @@ use walkdir::{DirEntry, WalkDir};
 
 pub fn read_files_in_dir_sorted<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
     let mut files: Vec<PathBuf> = WalkDir::new(dir)
-        .into_iter().filter_map(|e| e.ok())
+        .into_iter()
+        .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
         .map(|e| e.into_path())
         .collect();
@@ -16,7 +17,8 @@ pub fn read_files_in_dir_sorted<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
 
 pub fn read_files_in_dir_split_sorted<P: AsRef<Path>>(dir: P, size_threshold: usize) -> Vec<PathBuf> {
     let (small_files, big_files): (Vec<DirEntry>, Vec<DirEntry>) = WalkDir::new(dir)
-        .into_iter().filter_map(|e| e.ok())
+        .into_iter()
+        .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
         .partition(|e| e.metadata().unwrap().len() <= size_threshold as u64);
 
@@ -39,4 +41,3 @@ pub fn sha256(bytes: &[u8]) -> String {
 pub fn logarithm2(value: u32) -> u32 {
     f64::from(value).log2().round() as u32
 }
-

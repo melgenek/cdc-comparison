@@ -1,2 +1,2 @@
-pub mod polynomial;
 pub mod chunker;
+pub mod polynomial;

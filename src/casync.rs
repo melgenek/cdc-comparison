@@ -1,4 +1,5 @@
-use crate::chunk_stream::{ChunkSizes, SplitPointFinder};
+use crate::chunk_sizes::ChunkSizes;
+use crate::chunk_stream::SplitPointFinder;
 
 #[rustfmt::skip]
 const BUZHASH_TABLE: [u32; 256] = [
@@ -86,7 +87,8 @@ pub struct Casync {
 impl Casync {
     pub fn new(chunk_sizes: ChunkSizes) -> Self {
         Self {
-            discriminator: (chunk_sizes.avg_size() as f64 / (-1.42888852e-7 * chunk_sizes.avg_size() as f64 + 1.33237515)) as u64
+            discriminator: (chunk_sizes.avg_size() as f64
+                / (-1.42888852e-7 * chunk_sizes.avg_size() as f64 + 1.33237515)) as u64,
         }
     }
 }
@@ -103,9 +105,7 @@ impl SplitPointFinder for Casync {
             old_byte
         };
 
-        let shall_break = |hash: u32| -> bool {
-            (hash as u64 % self.discriminator) == (self.discriminator - 1)
-        };
+        let shall_break = |hash: u32| -> bool { (hash as u64 % self.discriminator) == (self.discriminator - 1) };
 
         let mut hash = 0;
         let mut i = chunk_sizes.min_size() - WINDOW_SIZE;
@@ -122,7 +122,9 @@ impl SplitPointFinder for Casync {
             }
             let new_byte = buf[i];
             let old_byte = update_window(new_byte);
-            hash = rol32(hash, 1) ^ rol32(BUZHASH_TABLE[old_byte as usize], WINDOW_SIZE) ^ BUZHASH_TABLE[new_byte as usize];
+            hash = rol32(hash, 1)
+                ^ rol32(BUZHASH_TABLE[old_byte as usize], WINDOW_SIZE)
+                ^ BUZHASH_TABLE[new_byte as usize];
             i += 1;
         }
         i
