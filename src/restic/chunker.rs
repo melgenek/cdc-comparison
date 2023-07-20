@@ -1,6 +1,6 @@
 use crate::chunk_sizes::ChunkSizes;
-use crate::restic::polynomial::Pol;
 use crate::chunker::Chunker;
+use crate::restic::polynomial::Pol;
 use crate::util::logarithm2;
 
 const WINDOW_SIZE: usize = 64;
@@ -125,9 +125,9 @@ mod tests {
 
     use crate::chunk_sizes::ChunkSizes;
     use crate::chunk_stream::ChunkStream;
+    use crate::chunker::Chunker;
     use crate::restic::chunker::ResticCdc;
     use crate::restic::polynomial::Pol;
-    use crate::chunker::Chunker;
     use crate::util::sha256;
     use crate::{KB, MB};
 
