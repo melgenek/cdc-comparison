@@ -115,16 +115,17 @@ fn main() -> std::io::Result<()> {
 
 fn run_without_file_boundaries<F>(
     chunk_sizes: ChunkSizes,
-    chunker: &ChunkerBuilder,
+    chunker_builder: &ChunkerBuilder,
     get_files: &F,
 ) -> std::io::Result<CdcResult>
 where
     F: Fn(&'static str) -> Vec<PathBuf> + 'static,
 {
+    let chunker = chunker_builder(chunk_sizes);
     let mut cdc_result = CdcResult::new(false);
     let mut process_directory = |dir: &'static str| -> std::io::Result<()> {
         let source = BufReader::with_capacity(16 * MB, MultiFileRead::new(get_files(dir))?);
-        for result in ChunkStream::new(source, chunker(chunk_sizes), chunk_sizes) {
+        for result in ChunkStream::new(source, &chunker, chunk_sizes) {
             let chunk = result?;
             cdc_result.append_chunk(chunk);
         }
@@ -136,13 +137,14 @@ where
     Ok(cdc_result)
 }
 
-fn run_with_file_boundaries(chunk_sizes: ChunkSizes, chunker: &ChunkerBuilder) -> std::io::Result<CdcResult> {
+fn run_with_file_boundaries(chunk_sizes: ChunkSizes, chunker_builder: &ChunkerBuilder) -> std::io::Result<CdcResult> {
+    let chunker = chunker_builder(chunk_sizes);
     let mut cdc_result = CdcResult::new(true);
     let mut process_directory = |dir: &str| -> std::io::Result<()> {
         let files = read_files_in_dir_sorted_by_name(dir);
         for file in files {
             let source = File::open(file)?;
-            for result in ChunkStream::new(source, chunker(chunk_sizes), chunk_sizes) {
+            for result in ChunkStream::new(source, &chunker, chunk_sizes) {
                 let chunk = result?;
                 cdc_result.append_chunk(chunk);
             }

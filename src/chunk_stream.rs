@@ -12,7 +12,7 @@ pub struct Chunk {
     pub data: Vec<u8>,
 }
 
-pub struct ChunkStream<R: Read> {
+pub struct ChunkStream<'a, R: Read> {
     /// Buffer of data from source for finding cut points.
     buffer: Vec<u8>,
     /// Number of relevant bytes in the `buffer`.
@@ -23,12 +23,12 @@ pub struct ChunkStream<R: Read> {
     processed: usize,
     /// True when the source produces no more data.
     eof: bool,
-    split_point_finder: Box<dyn Chunker>,
+    chunker: &'a Box<dyn Chunker>,
     chunk_sizes: ChunkSizes,
 }
 
-impl<R: Read> ChunkStream<R> {
-    pub fn new(source: R, split_point_finder: Box<dyn Chunker>, chunk_sizes: ChunkSizes) -> Self {
+impl<'a, R: Read> ChunkStream<'a, R> {
+    pub fn new(source: R, chunker: &'a Box<dyn Chunker>, chunk_sizes: ChunkSizes) -> Self {
         Self {
             buffer: vec![0_u8; chunk_sizes.max_size() as usize],
             length: 0,
@@ -36,7 +36,7 @@ impl<R: Read> ChunkStream<R> {
             eof: false,
             processed: 0,
             chunk_sizes,
-            split_point_finder,
+            chunker,
         }
     }
 
@@ -63,7 +63,7 @@ impl<R: Read> ChunkStream<R> {
     }
 }
 
-impl<R: Read> Iterator for ChunkStream<R> {
+impl<'a, R: Read> Iterator for ChunkStream<'a, R> {
     type Item = std::io::Result<Chunk>;
 
     fn next(&mut self) -> Option<std::io::Result<Chunk>> {
@@ -73,7 +73,7 @@ impl<R: Read> Iterator for ChunkStream<R> {
                 let chunk_length = if self.length <= self.chunk_sizes.min_size() as usize {
                     self.length
                 } else {
-                    self.split_point_finder.find_split_point(&self.buffer[..self.length], &self.chunk_sizes)
+                    self.chunker.find_split_point(&self.buffer[..self.length], &self.chunk_sizes)
                 };
                 if chunk_length == 0 {
                     None

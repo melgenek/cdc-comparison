@@ -224,7 +224,7 @@ mod tests {
         let expected_chunks_count = chunks.len();
         let pol = Pol::from(0x3DA3358B4DC173 as u64);
         let restic: Box<dyn Chunker> = Box::new(ResticCdc::new(pol, chunk_sizes));
-        let mut chunker = ChunkStream::new(input, restic, chunk_sizes);
+        let mut chunker = ChunkStream::new(input, &restic, chunk_sizes);
 
         let mut offset = 0;
         let mut chunk_count = 0;
