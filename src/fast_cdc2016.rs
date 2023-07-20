@@ -154,8 +154,7 @@ impl Chunker for FastCdc2016 {
         // Again, paraphrasing: use the mask with fewer 1 bits for the hash
         // judgment when the current chunking position is larger than the
         // desired size, which makes it easier to generate larger chunks.
-        let last_pos = buf_length;
-        while index < last_pos {
+        while index < buf_length {
             hash = (hash << 1).wrapping_add(GEAR[buf[index] as usize]);
             if (hash & self.mask_l) == 0 {
                 return index;

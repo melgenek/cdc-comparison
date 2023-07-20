@@ -17,6 +17,7 @@ use crate::google_stadia_cdc::GoogleStadiaCdc;
 use crate::read_dir::MultiFileRead;
 use crate::restic::chunker::ResticCdc;
 use crate::restic::polynomial::Pol;
+use crate::ronomon_cdc::RonomonCdc;
 use crate::util::{
     read_files_in_dir_sorted_by_name, read_files_in_dir_sorted_by_size_desc, sha256, size_to_str_f64, KB, MB,
 };
@@ -31,6 +32,7 @@ mod fixed_size;
 mod google_stadia_cdc;
 mod read_dir;
 mod restic;
+mod ronomon_cdc;
 mod util;
 
 type ChunkerBuilder = Box<dyn Fn(ChunkSizes) -> Box<dyn Chunker>>;
@@ -38,19 +40,19 @@ type NamedChunker = (String, ChunkerBuilder);
 
 fn main() -> std::io::Result<()> {
     let chunk_sizes = vec![
+        ChunkSizes::new(64 * KB, 32 * KB, 256 * KB), // unusual avg*2>avg;avg*8 https://discuss.ipfs.tech/t/draft-common-bytes-standard-for-data-deduplication/6813/13  --- fails with stadia cdc
         ChunkSizes::new(32 * KB, 64 * KB, 128 * KB), // simple avg/2;avg;avg*2
         ChunkSizes::new(32 * KB, 64 * KB, 192 * KB), // ronomon good dedup avg/2;avg;3*avg https://github.com/ronomon/deduplication/issues/8#issue-810116157
         ChunkSizes::new(32 * KB, 64 * KB, 256 * KB), // ronomon good dedup avg/2;avg;3*avg(4avg) https://github.com/ronomon/deduplication/issues/8#issue-810116157
         ChunkSizes::new(64 * KB, 64 * KB, 192 * KB), // ronomon fast dedup avg=avg;3*avg https://github.com/ronomon/deduplication/issues/8#issue-810116157
         ChunkSizes::new(64 * KB, 64 * KB, 256 * KB), // ronomon fast dedup avg=avg;3*avg(4avg) https://github.com/ronomon/deduplication/issues/8#issue-810116157
         ChunkSizes::new(16 * KB, 64 * KB, 256 * KB), // default casync avg/4;avg;avg*4 https://github.com/systemd/casync/blob/main/src/cachunker.h#L16-L20
-        // ChunkSizes::new(64 * KB, 32 * KB, 256 * KB), // unusual avg*2>avg;avg*8 https://discuss.ipfs.tech/t/draft-common-bytes-standard-for-data-deduplication/6813/13  --- fails with stadia cdc
-        ChunkSizes::new(32 * KB, 64 * KB, 96 * KB), // RC4 avg/2;avg;=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
+        ChunkSizes::new(32 * KB, 64 * KB, 96 * KB), // RC4 avg/2;avg;<=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
         ChunkSizes::new(512 * KB, 2 * MB, 8 * MB), // default duplicacy avg/4;avg;avg*4 https://github.com/gilbertchen/duplicacy/blob/master/duplicacy_paper.pdf
         ChunkSizes::new(512 * KB, 1 * MB, 8 * MB), // default restic avg/2;avg;avg*8 https://github.com/restic/chunker/blob/master/chunker.go#L15-L18
         // similar distributions, but bigger avg chunks
+        ChunkSizes::new(4 * MB, 2 * MB, 16 * MB), // unusual avg*2;avg;avg*8 --- fails with stadia cdc
         ChunkSizes::new(1 * MB, 2 * MB, 16 * MB), // restic avg/2;avg;avg*8
-        // ChunkSizes::new(4 * MB, 2 * MB, 16 * MB), // unusual avg*2;avg;avg*8 --- fails with stadia cdc
         ChunkSizes::new(2 * MB, 4 * MB, 7 * MB),  // RC4 avg/2;avg;<=avg*2
         ChunkSizes::new(2 * MB, 4 * MB, 8 * MB),  // simple avg/2;avg;avg*2
         ChunkSizes::new(1 * MB, 4 * MB, 16 * MB), // casync/duplicacy avg/4;avg;avg*4
@@ -75,6 +77,7 @@ fn main() -> std::io::Result<()> {
         ("Restic".to_string(), Box::new(|sizes| Box::new(ResticCdc::new(Pol::generate_random(), sizes)))),
         ("StadiaCdc".to_string(), Box::new(|sizes| Box::new(GoogleStadiaCdc::new(sizes)))),
         ("Casync".to_string(), Box::new(|sizes| Box::new(Casync::new(sizes)))),
+        ("RonomonCdc".to_string(), Box::new(|sizes| Box::new(RonomonCdc::new(sizes)))),
     ];
 
     let chunker_names: Vec<String> = chunkers_with_names
@@ -166,9 +169,15 @@ fn write_results(names: &[String], results: &Vec<(ChunkSizes, Vec<CdcResult>)>) 
             results,
             |value| format!("{:.3}%", value.dedup_ratio()),
             |r1, r2| {
-                r1.considers_file_boundaries
-                    .cmp(&r2.considers_file_boundaries)
-                    .then(r2.dedup_ratio().total_cmp(&r1.dedup_ratio()))
+                let dedup_ratio1 = r1.dedup_ratio();
+                let dedup_ratio2 = r2.dedup_ratio();
+                if dedup_ratio1 == 0f64 && dedup_ratio2 == 0f64 {
+                    Ordering::Greater
+                } else {
+                    r1.considers_file_boundaries
+                        .cmp(&r2.considers_file_boundaries)
+                        .then(dedup_ratio2.total_cmp(&dedup_ratio1))
+                }
             },
         )
         .as_bytes(),
