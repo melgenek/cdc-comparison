@@ -58,11 +58,11 @@ fn mask(bits: u32) -> u32 {
 }
 
 impl RonomonCdc {
-    pub fn new(chunk_sizes: ChunkSizes) -> Self {
+    pub fn new(chunk_sizes: ChunkSizes, normalization_level: u32) -> Self {
         assert!(chunk_sizes.min_size() >= MINIMUM_MIN);
         assert!(chunk_sizes.avg_size() >= AVERAGE_MIN && chunk_sizes.avg_size() <= AVERAGE_MAX);
         let bits = logarithm2(chunk_sizes.avg_size() as u32);
-        Self { mask_s: mask(bits + 1), mask_l: mask(bits - 1) }
+        Self { mask_s: mask(bits + normalization_level), mask_l: mask(bits - normalization_level) }
     }
 }
 

@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufReader, Write};
+use std::io::{BufReader, Cursor, Write};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -18,7 +18,8 @@ use crate::google_stadia_cdc::GoogleStadiaCdc;
 use crate::read_dir::MultiFileRead;
 use crate::restic::chunker::ResticCdc;
 use crate::restic::polynomial::Pol;
-use crate::ronomon_cdc::RonomonCdc;
+use crate::ronomon::RonomonCdc;
+use crate::ronomon64::Ronomon64Cdc;
 use crate::util::{
     read_files_in_dir_sorted_by_name, read_files_in_dir_sorted_by_size_desc, sha256, size_to_str_f64, KB, MB,
 };
@@ -34,7 +35,8 @@ mod fixed_size;
 mod google_stadia_cdc;
 mod read_dir;
 mod restic;
-mod ronomon_cdc;
+mod ronomon;
+mod ronomon64;
 mod util;
 
 type ChunkerBuilder = Box<dyn Fn(ChunkSizes) -> Box<dyn Chunker>>;
@@ -71,11 +73,21 @@ fn main() -> std::io::Result<()> {
     let chunkers_with_names: Vec<NamedChunker> = vec![
         ("Fixed size".to_string(), Box::new(|_| Box::new(FixedSize::new()))),
         ("FastCdc2016".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 2)))),
+        ("FastCdc2016NC1".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 1)))),
+        ("FastCdc2016".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 2)))),
+        ("FastCdc2016NC3".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 3)))),
+        ("FastCdc2020NC1".to_string(), Box::new(|sizes| Box::new(FastCdc2020::new(sizes, 1)))),
         ("FastCdc2020".to_string(), Box::new(|sizes| Box::new(FastCdc2020::new(sizes, 2)))),
+        ("FastCdc2020NC3".to_string(), Box::new(|sizes| Box::new(FastCdc2020::new(sizes, 3)))),
         ("Restic".to_string(), Box::new(|sizes| Box::new(ResticCdc::new(Pol::generate_random(), sizes)))),
         ("StadiaCdc".to_string(), Box::new(|sizes| Box::new(GoogleStadiaCdc::new(sizes)))),
         ("Casync".to_string(), Box::new(|sizes| Box::new(Casync::new(sizes)))),
-        ("RonomonCdc".to_string(), Box::new(|sizes| Box::new(RonomonCdc::new(sizes)))),
+        ("Ronomon".to_string(), Box::new(|sizes| Box::new(RonomonCdc::new(sizes, 1)))),
+        ("RonomonNC2".to_string(), Box::new(|sizes| Box::new(RonomonCdc::new(sizes, 2)))),
+        ("RonomonNC3".to_string(), Box::new(|sizes| Box::new(RonomonCdc::new(sizes, 3)))),
+        ("Ronomon64".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 1)))),
+        ("Ronomon64NC2".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 2)))),
+        ("Ronomon64NC3".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 3)))),
     ];
 
     let chunker_names: Vec<String> = chunkers_with_names
