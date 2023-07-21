@@ -12,6 +12,7 @@ use markdown_table::{Heading, MarkdownTable};
 use crate::chunk_stream::{Chunk, ChunkStream};
 use crate::chunker::Chunker;
 use crate::fast_cdc2016::FastCdc2016;
+use crate::fast_cdc2020::FastCdc2020;
 use crate::fixed_size::FixedSize;
 use crate::google_stadia_cdc::GoogleStadiaCdc;
 use crate::read_dir::MultiFileRead;
@@ -28,6 +29,7 @@ mod chunk_sizes;
 mod chunk_stream;
 mod chunker;
 mod fast_cdc2016;
+mod fast_cdc2020;
 mod fixed_size;
 mod google_stadia_cdc;
 mod read_dir;
@@ -74,6 +76,7 @@ fn main() -> std::io::Result<()> {
     let chunkers_with_names: Vec<NamedChunker> = vec![
         ("Fixed size".to_string(), Box::new(|_| Box::new(FixedSize::new()))),
         ("FastCdc2016".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 2)))),
+        ("FastCdc2020".to_string(), Box::new(|sizes| Box::new(FastCdc2020::new(sizes, 2)))),
         ("Restic".to_string(), Box::new(|sizes| Box::new(ResticCdc::new(Pol::generate_random(), sizes)))),
         ("StadiaCdc".to_string(), Box::new(|sizes| Box::new(GoogleStadiaCdc::new(sizes)))),
         ("Casync".to_string(), Box::new(|sizes| Box::new(Casync::new(sizes)))),
@@ -161,7 +164,7 @@ fn run_with_file_boundaries(chunk_sizes: ChunkSizes, chunker_builder: &ChunkerBu
 }
 
 fn write_results(names: &[String], results: &Vec<(ChunkSizes, Vec<CdcResult>)>) -> std::io::Result<()> {
-    let mut f = std::fs::OpenOptions::new().write(true).truncate(true).open("NEW_RESULTS.md")?;
+    let mut f = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("NEW_RESULTS.md")?;
     f.write_all(b"### Deduplication ratio % (the more, the better):\n\n")?;
     f.write_all(
         convert_results_to_string(
