@@ -46,8 +46,6 @@ fn main() -> std::io::Result<()> {
         ChunkSizes::new(32 * KB, 64 * KB, 128 * KB), // simple avg/2;avg;avg*2
         ChunkSizes::new(32 * KB, 64 * KB, 192 * KB), // ronomon good dedup avg/2;avg;3*avg https://github.com/ronomon/deduplication/issues/8#issue-810116157
         ChunkSizes::new(32 * KB, 64 * KB, 256 * KB), // ronomon good dedup avg/2;avg;3*avg(4avg) https://github.com/ronomon/deduplication/issues/8#issue-810116157
-        ChunkSizes::new(64 * KB, 64 * KB, 192 * KB), // ronomon fast dedup avg=avg;3*avg https://github.com/ronomon/deduplication/issues/8#issue-810116157
-        ChunkSizes::new(64 * KB, 64 * KB, 256 * KB), // ronomon fast dedup avg=avg;3*avg(4avg) https://github.com/ronomon/deduplication/issues/8#issue-810116157
         ChunkSizes::new(16 * KB, 64 * KB, 256 * KB), // default casync avg/4;avg;avg*4 https://github.com/systemd/casync/blob/main/src/cachunker.h#L16-L20
         ChunkSizes::new(32 * KB, 64 * KB, 96 * KB), // RC4 avg/2;avg;<=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
         ChunkSizes::new(512 * KB, 2 * MB, 8 * MB), // default duplicacy avg/4;avg;avg*4 https://github.com/gilbertchen/duplicacy/blob/master/duplicacy_paper.pdf
@@ -60,9 +58,6 @@ fn main() -> std::io::Result<()> {
         ChunkSizes::new(1 * MB, 4 * MB, 16 * MB), // casync/duplicacy avg/4;avg;avg*4
         ChunkSizes::new(2 * MB, 4 * MB, 12 * MB), // ronomon good dedup avg/2;avg;3*avg
         ChunkSizes::new(2 * MB, 4 * MB, 16 * MB), // ronomon good dedup avg/2;avg;>3*avg(4avg)
-        ChunkSizes::new(4 * MB, 4 * MB, 10 * MB), // random avg;avg;<=avg*2
-        ChunkSizes::new(4 * MB, 4 * MB, 12 * MB), // ronomon fast dedup avg;avg;>3*avg
-        ChunkSizes::new(4 * MB, 4 * MB, 16 * MB), // ronomon fast dedup avg;avg;>3*avg(avg)
                                                   // ChunkSizes::new(4 * MB, 8 * MB, 16 * MB), // simple avg/2;avg;avg*2
                                                   // ChunkSizes::new(4 * MB, 8 * MB, 10 * MB), // RC4 avg/2;avg;<=avg*2
                                                   // ChunkSizes::new(4 * MB, 8 * MB, 12 * MB), // RC4 avg/2;avg;<=avg*2
