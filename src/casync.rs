@@ -101,7 +101,6 @@ impl Chunker for Casync {
         let mut i = chunk_sizes.min_size() - WINDOW_SIZE;
         while i < chunk_sizes.min_size() {
             let new_byte = buf[i];
-            // update_window(new_byte);
             hash = rol32(hash, 1) ^ BUZHASH_TABLE[new_byte as usize];
             i += 1;
         }
