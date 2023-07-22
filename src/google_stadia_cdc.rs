@@ -106,13 +106,13 @@ impl GoogleStadiaCdc {
 impl Chunker for GoogleStadiaCdc {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         // Init hash to all 1's to avoid zero-length chunks with min_size=0.
-        let mut hash = u64::MAX;
+        let mut digest = u64::MAX;
 
         // Skip the first min_size bytes, but "warm up" the rolling hash for enough
         // rounds to make sure the hash has gathered full "content history".
         let mut i = chunk_sizes.min_size() - HASH_BITS;
         while i < chunk_sizes.min_size() {
-            hash = (hash << 1).wrapping_add(GEAR[buf[i as usize] as usize]);
+            digest = (digest << 1).wrapping_add(GEAR[buf[i as usize] as usize]);
             i += 1;
         }
 
@@ -121,8 +121,8 @@ impl Chunker for GoogleStadiaCdc {
         let mut rc_len = buf.len();
         let mut rc_mask: u64 = 0;
         while i < buf.len() {
-            if (hash & rc_mask) == 0 {
-                if hash <= self.threshold {
+            if (digest & rc_mask) == 0 {
+                if digest <= self.threshold {
                     // This hash matches the target length hash criteria, return it.
                     return i;
                 }
@@ -130,15 +130,15 @@ impl Chunker for GoogleStadiaCdc {
                 // update rc_mask to check as many MSBits as this hash would pass.
                 rc_len = i;
                 rc_mask = u64::MAX;
-                while (hash & rc_mask) > 0 {
+                while (digest & rc_mask) > 0 {
                     rc_mask <<= 1;
                 }
             }
-            hash = (hash << 1).wrapping_add(GEAR[buf[i as usize] as usize]);
+            digest = (digest << 1).wrapping_add(GEAR[buf[i as usize] as usize]);
             i += 1;
         }
 
-        if (hash & rc_mask) > 0 {
+        if (digest & rc_mask) > 0 {
             rc_len
         } else {
             i

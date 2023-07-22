@@ -28,21 +28,24 @@ fn generate_table() -> [u64; 256] {
     result
 }
 
-pub struct Buzhash64 {
+pub struct Buzhash64Reg {
     table: [u64; 256],
-    split_mask: u64,
+    threshold: u64,
     window_size: usize,
 }
 
-impl Buzhash64 {
+impl Buzhash64Reg {
     pub fn new(chunk_sizes: ChunkSizes, window_size: usize) -> Self {
         assert!(chunk_sizes.avg_size() <= u32::MAX as usize);
-        let bits = logarithm2(chunk_sizes.avg_size() as u32);
-        Self { table: generate_table(), split_mask: (1 << bits) - 1, window_size }
+        Self {
+            table: generate_table(),
+            threshold: u64::MAX / (chunk_sizes.avg_size() as u64 - chunk_sizes.min_size() as u64 + 1),
+            window_size,
+        }
     }
 }
 
-impl Chunker for Buzhash64 {
+impl Chunker for Buzhash64Reg {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let mut digest = 0;
         let mut i = chunk_sizes.min_size() - self.window_size;
@@ -52,9 +55,21 @@ impl Chunker for Buzhash64 {
             i += 1;
         }
 
+        let mut rc_len = buf.len();
+        let mut rc_mask: u64 = 0;
         while i < buf.len() {
-            if (digest & self.split_mask) == 0 {
-                break;
+            if (digest & rc_mask) == 0 {
+                if digest <= self.threshold {
+                    // This hash matches the target length hash criteria, return it.
+                    return i;
+                }
+                // This is a better regression point. Set it as the new rc_len and
+                // update rc_mask to check as many MSBits as this hash would pass.
+                rc_len = i;
+                rc_mask = u64::MAX;
+                while (digest & rc_mask) > 0 {
+                    rc_mask <<= 1;
+                }
             }
             let new_byte = buf[i];
             let old_byte = buf[i - self.window_size];

@@ -5,17 +5,18 @@ use std::io::{BufReader, Cursor, Write};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
+use crate::buzhash32::Buzhash32;
 use crate::buzhash64::Buzhash64;
+use crate::buzhash64_reg::Buzhash64Reg;
 use crate::casync::Casync;
 use crate::chunk_sizes::ChunkSizes;
 use markdown_table::{Heading, MarkdownTable};
 
 use crate::chunk_stream::{Chunk, ChunkStream};
 use crate::chunker::Chunker;
-use crate::duplicacy::Duplicacy;
 use crate::fast_cdc2016::FastCdc2016;
 use crate::fast_cdc2020::FastCdc2020;
-use crate::fixed_size::FixedSize;
+use crate::fixed_size::Fixed;
 use crate::google_stadia_cdc::GoogleStadiaCdc;
 use crate::read_dir::MultiFileRead;
 use crate::restic::chunker::ResticCdc;
@@ -26,12 +27,14 @@ use crate::util::{
     read_files_in_dir_sorted_by_name, read_files_in_dir_sorted_by_size_desc, sha256, size_to_str_f64, KB, MB,
 };
 
+mod buzhash32;
+mod buzhash32_reg;
 mod buzhash64;
+mod buzhash64_reg;
 mod casync;
 mod chunk_sizes;
 mod chunk_stream;
 mod chunker;
-mod duplicacy;
 mod fast_cdc2016;
 mod fast_cdc2020;
 mod fixed_size;
@@ -72,7 +75,7 @@ fn main() -> std::io::Result<()> {
                                                   // ChunkSizes::new(8 * MB, 8 * MB, 16 * MB), // random avg;avg;<=avg*2
     ];
     let chunkers_with_names: Vec<NamedChunker> = vec![
-        ("Fixed size".to_string(), Box::new(|_| Box::new(FixedSize::new()))),
+        ("Fixed size".to_string(), Box::new(|_| Box::new(Fixed::new()))),
         ("FastCdc2016".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 2)))),
         ("FastCdc2016NC1".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 1)))),
         ("FastCdc2016".to_string(), Box::new(|sizes| Box::new(FastCdc2016::new(sizes, 2)))),
@@ -89,8 +92,33 @@ fn main() -> std::io::Result<()> {
         ("Ronomon64".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 1)))),
         ("Ronomon64NC2".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 2)))),
         ("Ronomon64NC3".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 3)))),
-        ("Buzhash64".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes)))),
-        ("Duplicacy".to_string(), Box::new(|sizes| Box::new(Duplicacy::new(sizes)))),
+        ("Buzhash32_32".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 32)))),
+        ("Buzhash32_48".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 48)))),
+        ("Buzhash32_64".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 64)))),
+        ("Buzhash32_96".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 96)))),
+        ("Buzhash32_128".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 128)))),
+        ("Buzhash32_256".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 256)))),
+        ("Buzhash32_512".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 512)))),
+        ("Buzhash32Reg_32".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 32)))),
+        ("Buzhash32Reg_48".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 48)))),
+        ("Buzhash32Reg_64".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 64)))),
+        ("Buzhash32Reg_96".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 96)))),
+        ("Buzhash32Reg_128".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 128)))),
+        ("Buzhash32Reg_256".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 256)))),
+        ("Buzhash32Reg_512".to_string(), Box::new(|sizes| Box::new(Buzhash32::new(sizes, 512)))),
+        ("Buzhash64_32".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes, 32)))),
+        ("Buzhash64_48".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes, 48)))),
+        ("Buzhash64_64".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes, 64)))),
+        ("Buzhash64_96".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes, 96)))),
+        ("Buzhash64_128".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes, 128)))),
+        ("Buzhash64_256".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes, 256)))),
+        ("Buzhash64_512".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes, 512)))),
+        ("Buzhash64Reg_32".to_string(), Box::new(|sizes| Box::new(Buzhash64Reg::new(sizes, 32)))),
+        ("Buzhash64Reg_64".to_string(), Box::new(|sizes| Box::new(Buzhash64Reg::new(sizes, 64)))),
+        ("Buzhash64Reg_96".to_string(), Box::new(|sizes| Box::new(Buzhash64Reg::new(sizes, 96)))),
+        ("Buzhash64Reg_128".to_string(), Box::new(|sizes| Box::new(Buzhash64Reg::new(sizes, 128)))),
+        ("Buzhash64Reg_256".to_string(), Box::new(|sizes| Box::new(Buzhash64Reg::new(sizes, 256)))),
+        ("Buzhash64Reg_512".to_string(), Box::new(|sizes| Box::new(Buzhash64Reg::new(sizes, 512)))),
     ];
 
     let chunker_names: Vec<String> = chunkers_with_names
