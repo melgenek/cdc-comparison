@@ -5,6 +5,7 @@ use std::io::{BufReader, Cursor, Write};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
+use crate::buzhash64::Buzhash64;
 use crate::casync::Casync;
 use crate::chunk_sizes::ChunkSizes;
 use markdown_table::{Heading, MarkdownTable};
@@ -24,7 +25,7 @@ use crate::util::{
     read_files_in_dir_sorted_by_name, read_files_in_dir_sorted_by_size_desc, sha256, size_to_str_f64, KB, MB,
 };
 
-mod buzhash_tmp;
+mod buzhash64;
 mod casync;
 mod chunk_sizes;
 mod chunk_stream;
@@ -44,7 +45,6 @@ type NamedChunker = (String, ChunkerBuilder);
 
 fn main() -> std::io::Result<()> {
     let chunk_sizes = vec![
-        ChunkSizes::new(64 * KB, 32 * KB, 256 * KB), // unusual avg*2>avg;avg*8 https://discuss.ipfs.tech/t/draft-common-bytes-standard-for-data-deduplication/6813/13  --- fails with stadia cdc
         ChunkSizes::new(32 * KB, 64 * KB, 128 * KB), // simple avg/2;avg;avg*2
         ChunkSizes::new(32 * KB, 64 * KB, 192 * KB), // ronomon good dedup avg/2;avg;3*avg https://github.com/ronomon/deduplication/issues/8#issue-810116157
         ChunkSizes::new(32 * KB, 64 * KB, 256 * KB), // ronomon good dedup avg/2;avg;3*avg(4avg) https://github.com/ronomon/deduplication/issues/8#issue-810116157
@@ -53,7 +53,6 @@ fn main() -> std::io::Result<()> {
         ChunkSizes::new(512 * KB, 2 * MB, 8 * MB), // default duplicacy avg/4;avg;avg*4 https://github.com/gilbertchen/duplicacy/blob/master/duplicacy_paper.pdf
         ChunkSizes::new(512 * KB, 1 * MB, 8 * MB), // default restic avg/2;avg;avg*8 https://github.com/restic/chunker/blob/master/chunker.go#L15-L18
         // similar distributions, but bigger avg chunks
-        ChunkSizes::new(4 * MB, 2 * MB, 16 * MB), // unusual avg*2;avg;avg*8 --- fails with stadia cdc
         ChunkSizes::new(1 * MB, 2 * MB, 16 * MB), // restic avg/2;avg;avg*8
         ChunkSizes::new(2 * MB, 4 * MB, 7 * MB),  // RC4 avg/2;avg;<=avg*2
         ChunkSizes::new(2 * MB, 4 * MB, 8 * MB),  // simple avg/2;avg;avg*2
@@ -88,6 +87,7 @@ fn main() -> std::io::Result<()> {
         ("Ronomon64".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 1)))),
         ("Ronomon64NC2".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 2)))),
         ("Ronomon64NC3".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 3)))),
+        ("Buzhash64".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes)))),
     ];
 
     let chunker_names: Vec<String> = chunkers_with_names
