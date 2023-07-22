@@ -10,8 +10,8 @@ pub struct ChunkSizes {
 
 impl ChunkSizes {
     pub fn new(min_size: usize, avg_size: usize, max_size: usize) -> Self {
-        // assert!(min_size <= avg_size);
-        // assert!(avg_size <= max_size);
+        assert!(min_size <= avg_size);
+        assert!(avg_size <= max_size);
         Self { min_size, avg_size, max_size }
     }
 

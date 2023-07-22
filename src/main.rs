@@ -12,6 +12,7 @@ use markdown_table::{Heading, MarkdownTable};
 
 use crate::chunk_stream::{Chunk, ChunkStream};
 use crate::chunker::Chunker;
+use crate::duplicacy::Duplicacy;
 use crate::fast_cdc2016::FastCdc2016;
 use crate::fast_cdc2020::FastCdc2020;
 use crate::fixed_size::FixedSize;
@@ -30,6 +31,7 @@ mod casync;
 mod chunk_sizes;
 mod chunk_stream;
 mod chunker;
+mod duplicacy;
 mod fast_cdc2016;
 mod fast_cdc2020;
 mod fixed_size;
@@ -88,6 +90,7 @@ fn main() -> std::io::Result<()> {
         ("Ronomon64NC2".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 2)))),
         ("Ronomon64NC3".to_string(), Box::new(|sizes| Box::new(Ronomon64Cdc::new(sizes, 3)))),
         ("Buzhash64".to_string(), Box::new(|sizes| Box::new(Buzhash64::new(sizes)))),
+        ("Duplicacy".to_string(), Box::new(|sizes| Box::new(Duplicacy::new(sizes)))),
     ];
 
     let chunker_names: Vec<String> = chunkers_with_names
