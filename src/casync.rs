@@ -95,23 +95,13 @@ impl Casync {
 
 impl Chunker for Casync {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
-        let mut window: [u8; WINDOW_SIZE] = [0; WINDOW_SIZE];
-        let mut oldest_idx: usize = 0;
-
-        let mut update_window = |new_byte: u8| -> u8 {
-            let old_byte = window[oldest_idx];
-            window[oldest_idx] = new_byte;
-            oldest_idx = (oldest_idx + 1) % WINDOW_SIZE;
-            old_byte
-        };
-
         let shall_break = |hash: u32| -> bool { (hash as u64 % self.discriminator) == (self.discriminator - 1) };
 
         let mut hash = 0;
         let mut i = chunk_sizes.min_size() - WINDOW_SIZE;
         while i < chunk_sizes.min_size() {
             let new_byte = buf[i];
-            update_window(new_byte);
+            // update_window(new_byte);
             hash = rol32(hash, 1) ^ BUZHASH_TABLE[new_byte as usize];
             i += 1;
         }
@@ -121,7 +111,7 @@ impl Chunker for Casync {
                 break;
             }
             let new_byte = buf[i];
-            let old_byte = update_window(new_byte);
+            let old_byte = buf[i - WINDOW_SIZE];
             hash = rol32(hash, 1)
                 ^ rol32(BUZHASH_TABLE[old_byte as usize], WINDOW_SIZE)
                 ^ BUZHASH_TABLE[new_byte as usize];
