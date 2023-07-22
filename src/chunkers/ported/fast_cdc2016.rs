@@ -1,5 +1,5 @@
-use crate::chunk_sizes::ChunkSizes;
-use crate::chunker::Chunker;
+use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunker::Chunker;
 use crate::util::logarithm2;
 
 pub const MINIMUM_MIN: usize = 64;

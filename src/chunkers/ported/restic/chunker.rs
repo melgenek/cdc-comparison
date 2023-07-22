@@ -1,6 +1,6 @@
-use crate::chunk_sizes::ChunkSizes;
-use crate::chunker::Chunker;
-use crate::restic::polynomial::Pol;
+use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunker::Chunker;
+use crate::chunkers::ported::restic::polynomial::Pol;
 use crate::util::logarithm2;
 
 const WINDOW_SIZE: usize = 64;
@@ -123,9 +123,9 @@ mod tests {
     use std::fs::File;
     use std::io::Read;
 
-    use crate::chunk_sizes::ChunkSizes;
     use crate::chunk_stream::ChunkStream;
-    use crate::chunker::Chunker;
+    use crate::chunkers::chunk_sizes::ChunkSizes;
+    use crate::chunkers::chunker::Chunker;
     use crate::restic::chunker::ResticCdc;
     use crate::restic::polynomial::Pol;
     use crate::util::sha256;

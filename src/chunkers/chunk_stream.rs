@@ -1,6 +1,7 @@
-use crate::chunk_sizes::ChunkSizes;
-use crate::chunker::Chunker;
 use std::io::Read;
+
+use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunker::Chunker;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Chunk {

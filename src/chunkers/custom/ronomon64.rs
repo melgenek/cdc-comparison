@@ -1,11 +1,10 @@
-use crate::chunk_sizes::ChunkSizes;
-use crate::chunker::Chunker;
+use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunker::Chunker;
 use crate::util::logarithm2;
 use std::io::Cursor;
 
 use aes::cipher::{generic_array::GenericArray, KeyIvInit, StreamCipher};
 use byteorder::{BigEndian, ReadBytesExt};
-use markdown_table::{Heading, MarkdownTable};
 
 pub const MINIMUM_MIN: usize = 64;
 pub const AVERAGE_MIN: usize = 64;
@@ -31,7 +30,7 @@ fn generate_table() -> [u64; 256] {
     for i in 0..256 {
         let mut num: u64 = rdr.read_u64::<BigEndian>().unwrap();
         num %= max_value;
-        assert!(num >= 0 && num < max_value);
+        assert!(num < max_value);
         result[i] = num;
     }
     result

@@ -1,5 +1,5 @@
-use crate::chunk_sizes::ChunkSizes;
-use crate::chunker::Chunker;
+use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunker::Chunker;
 
 pub struct Fixed;
 

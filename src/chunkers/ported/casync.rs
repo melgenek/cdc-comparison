@@ -1,5 +1,5 @@
-use crate::chunk_sizes::ChunkSizes;
-use crate::chunker::Chunker;
+use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunker::Chunker;
 
 #[rustfmt::skip]
 const BUZHASH_TABLE: [u32; 256] = [

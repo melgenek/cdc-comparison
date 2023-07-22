@@ -4,6 +4,8 @@ use data_encoding::HEXLOWER;
 use ring::digest::{Context, SHA256};
 use walkdir::WalkDir;
 
+pub mod multi_file_dir;
+
 pub const KB: usize = 1024;
 pub const MB: usize = 1024 * 1024;
 

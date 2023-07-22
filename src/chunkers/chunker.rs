@@ -1,4 +1,4 @@
-use crate::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunk_sizes::ChunkSizes;
 
 pub trait Chunker {
     /// Accepts a buffer and chunk sizes.

@@ -1,21 +1,20 @@
-use crate::chunk_sizes::ChunkSizes;
-use crate::chunker::Chunker;
-use crate::util::logarithm2;
+use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunker::Chunker;
 use byteorder::{BigEndian, ReadBytesExt};
 use ring::digest::{Context, SHA256};
 use std::io::Cursor;
 
-fn rol32(x: u32, i: usize) -> u32 {
-    let i = i % 32;
+pub fn rol64(x: u64, i: usize) -> u64 {
+    let i = i % 64;
     if i == 0 {
         x
     } else {
-        (x << i) | (x >> (32 - i))
+        (x << i) | (x >> (64 - i))
     }
 }
 
-fn generate_table() -> [u32; 256] {
-    let mut result = [0u32; 256];
+fn generate_table() -> [u64; 256] {
+    let mut result = [0u64; 256];
     for i in 0..=255 {
         let mut seed = [0u8; 64];
         seed.fill(i);
@@ -23,40 +22,40 @@ fn generate_table() -> [u32; 256] {
         hash.update(&seed);
         let digest = hash.finish();
         let mut rdr = Cursor::new(digest.as_ref());
-        result[i as usize] = rdr.read_u32::<BigEndian>().unwrap();
+        result[i as usize] = rdr.read_u64::<BigEndian>().unwrap();
     }
     result
 }
 
-pub struct Buzhash32Reg {
-    table: [u32; 256],
-    threshold: u32,
+pub struct Buzhash64Reg {
+    table: [u64; 256],
+    threshold: u64,
     window_size: usize,
 }
 
-impl Buzhash32Reg {
+impl Buzhash64Reg {
     pub fn new(chunk_sizes: ChunkSizes, window_size: usize) -> Self {
         assert!(chunk_sizes.avg_size() <= u32::MAX as usize);
         Self {
             table: generate_table(),
-            threshold: u32::MAX / (chunk_sizes.avg_size() as u32 - chunk_sizes.min_size() as u32 + 1),
+            threshold: u64::MAX / (chunk_sizes.avg_size() as u64 - chunk_sizes.min_size() as u64 + 1),
             window_size,
         }
     }
 }
 
-impl Chunker for Buzhash32Reg {
+impl Chunker for Buzhash64Reg {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let mut digest = 0;
         let mut i = chunk_sizes.min_size() - self.window_size;
         while i < chunk_sizes.min_size() {
             let enter = buf[i];
-            digest = rol32(digest, 1) ^ self.table[enter as usize];
+            digest = rol64(digest, 1) ^ self.table[enter as usize];
             i += 1;
         }
 
         let mut rc_len = buf.len();
-        let mut rc_mask: u32 = 0;
+        let mut rc_mask: u64 = 0;
         while i < buf.len() {
             if (digest & rc_mask) == 0 {
                 if digest <= self.threshold {
@@ -66,18 +65,23 @@ impl Chunker for Buzhash32Reg {
                 // This is a better regression point. Set it as the new rc_len and
                 // update rc_mask to check as many MSBits as this hash would pass.
                 rc_len = i;
-                rc_mask = u32::MAX;
+                rc_mask = u64::MAX;
                 while (digest & rc_mask) > 0 {
                     rc_mask <<= 1;
                 }
             }
             let new_byte = buf[i];
             let old_byte = buf[i - self.window_size];
-            digest = rol32(digest, 1)
-                ^ rol32(self.table[old_byte as usize], self.window_size)
+            digest = rol64(digest, 1)
+                ^ rol64(self.table[old_byte as usize], self.window_size)
                 ^ self.table[new_byte as usize];
             i += 1;
         }
-        i
+
+        if (digest & rc_mask) > 0 {
+            rc_len
+        } else {
+            i
+        }
     }
 }
