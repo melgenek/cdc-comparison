@@ -37,14 +37,14 @@ impl Benchmark {
         let chunk_sizes = vec![
             ChunkSizes::new(avg_size / 2, avg_size, 2 * avg_size),
             ChunkSizes::new(avg_size / 2, avg_size, 3 * avg_size), // ronomon good dedup avg/2;avg;>=3*avg https://github.com/ronomon/deduplication/issues/8#issue-810116157
-                                                                   // ChunkSizes::new(avg_size / 2, avg_size, 4 * avg_size), // ronomon good dedup avg/2;avg;>=3*avg(4avg) https://github.com/ronomon/deduplication/issues/8#issue-810116157
-                                                                   // ChunkSizes::new(avg_size / 4, avg_size, 4 * avg_size), // casync avg/4;avg;avg*4 https://github.com/systemd/casync/blob/main/src/cachunker.h#L16-L20
-                                                                   // ChunkSizes::new(avg_size / 2, avg_size, (1.25 * avg_size as f64) as usize), // RC4 avg/2;avg;<=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
-                                                                   // ChunkSizes::new(avg_size / 2, avg_size, (1.5 * avg_size as f64) as usize), // RC4 avg/2;avg;<=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
-                                                                   // ChunkSizes::new(avg_size / 2, avg_size, (1.75 * avg_size as f64) as usize), // RC4 avg/2;avg;<=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
-                                                                   // ChunkSizes::new((0.75 * avg_size as f64) as usize, avg_size, (1.5 * avg_size as f64) as usize),
-                                                                   // ChunkSizes::new(avg_size / 2, avg_size, 5 * avg_size),
-                                                                   // ChunkSizes::new(avg_size / 2, avg_size, 8 * avg_size), // restic avg/2;avg;avg*8 https://github.com/restic/chunker/blob/master/chunker.go#L15-L18
+            ChunkSizes::new(avg_size / 2, avg_size, 4 * avg_size), // ronomon good dedup avg/2;avg;>=3*avg(4avg) https://github.com/ronomon/deduplication/issues/8#issue-810116157
+            ChunkSizes::new(avg_size / 4, avg_size, 4 * avg_size), // casync avg/4;avg;avg*4 https://github.com/systemd/casync/blob/main/src/cachunker.h#L16-L20
+            ChunkSizes::new(avg_size / 2, avg_size, (1.25 * avg_size as f64) as usize), // RC4 avg/2;avg;<=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
+            ChunkSizes::new(avg_size / 2, avg_size, (1.5 * avg_size as f64) as usize), // RC4 avg/2;avg;<=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
+            ChunkSizes::new(avg_size / 2, avg_size, (1.75 * avg_size as f64) as usize), // RC4 avg/2;avg;<=avg*2 https://github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst#summary
+            ChunkSizes::new((0.75 * avg_size as f64) as usize, avg_size, (1.5 * avg_size as f64) as usize),
+            ChunkSizes::new(avg_size / 2, avg_size, 5 * avg_size),
+            ChunkSizes::new(avg_size / 2, avg_size, 8 * avg_size), // restic avg/2;avg;avg*8 https://github.com/restic/chunker/blob/master/chunker.go#L15-L18
         ];
         Self { name, chunk_sizes, chunkers_with_names, get_files }
     }
