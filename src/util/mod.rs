@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use data_encoding::HEXLOWER;
 use ring::digest::{Context, SHA256};
@@ -58,4 +59,8 @@ pub fn size_to_str_f64(value: f64) -> String {
     } else {
         format!("{:.2}MB", value as f64 / MB as f64)
     }
+}
+
+pub fn limit_precision(v: f64) -> f64 {
+    f64::from_str(&format!("{:.2}", v)).unwrap()
 }
