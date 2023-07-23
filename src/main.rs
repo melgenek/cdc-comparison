@@ -1,3 +1,4 @@
+use crate::util::MB;
 use benchmark::{run_benchmarks, Benchmark, NamedChunker};
 use chunkers::custom::buzhash32::Buzhash32;
 use chunkers::custom::buzhash32_reg::Buzhash32Reg;
@@ -91,15 +92,56 @@ fn main() -> std::io::Result<()> {
             read_files_in_dir_sorted_by_size_desc,
         ),
         Benchmark::new("64KB".to_string(), 64 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new("128KB_FastCdc".to_string(), 128 * KB, fast_cdc_chunkers, read_files_in_dir_sorted_by_name),
-        Benchmark::new("128KB_Buz".to_string(), 128 * KB, buzhash_chunkers, read_files_in_dir_sorted_by_name),
+        Benchmark::new(
+            "128KB_FastCdc".to_string(),
+            128 * KB,
+            fast_cdc_chunkers.clone(),
+            read_files_in_dir_sorted_by_name,
+        ),
+        Benchmark::new("128KB_Buz".to_string(), 128 * KB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
         Benchmark::new(
             "128KB_fsd".to_string(),
             128 * KB,
             standard_chunkers.clone(),
             read_files_in_dir_sorted_by_size_desc,
         ),
-        Benchmark::new("128KB".to_string(), 128 * KB, standard_chunkers, read_files_in_dir_sorted_by_name),
+        Benchmark::new("128KB".to_string(), 128 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new(
+            "256KB_FastCdc".to_string(),
+            256 * KB,
+            fast_cdc_chunkers.clone(),
+            read_files_in_dir_sorted_by_name,
+        ),
+        Benchmark::new("256KB_Buz".to_string(), 256 * KB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new(
+            "256KB_fsd".to_string(),
+            256 * KB,
+            standard_chunkers.clone(),
+            read_files_in_dir_sorted_by_size_desc,
+        ),
+        Benchmark::new("256KB".to_string(), 256 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new(
+            "512KB_FastCdc".to_string(),
+            512 * KB,
+            fast_cdc_chunkers.clone(),
+            read_files_in_dir_sorted_by_name,
+        ),
+        Benchmark::new("512KB_Buz".to_string(), 512 * KB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new(
+            "512KB_fsd".to_string(),
+            512 * KB,
+            standard_chunkers.clone(),
+            read_files_in_dir_sorted_by_size_desc,
+        ),
+        Benchmark::new("512KB".to_string(), 512 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new("1MB_FastCdc".to_string(), 1 * MB, fast_cdc_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new("1MB_Buz".to_string(), 1 * MB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new("1MB_fsd".to_string(), 1 * MB, standard_chunkers.clone(), read_files_in_dir_sorted_by_size_desc),
+        Benchmark::new("1KB".to_string(), 1 * MB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new("2MB_FastCdc".to_string(), 2 * MB, fast_cdc_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new("2MB_Buz".to_string(), 2 * MB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new("2MB_fsd".to_string(), 2 * MB, standard_chunkers.clone(), read_files_in_dir_sorted_by_size_desc),
+        Benchmark::new("2MB".to_string(), 2 * MB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
     ];
     run_benchmarks(benchmarks)?;
 
