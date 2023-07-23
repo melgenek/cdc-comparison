@@ -77,15 +77,29 @@ fn main() -> std::io::Result<()> {
     ];
 
     let benchmarks = vec![
-        Benchmark::new("64KB_FastCdc".to_string(), 64 * KB, fast_cdc_chunkers, read_files_in_dir_sorted_by_name),
-        Benchmark::new("64KB_Buz".to_string(), 64 * KB, buzhash_chunkers, read_files_in_dir_sorted_by_name),
+        Benchmark::new(
+            "64KB_FastCdc".to_string(),
+            64 * KB,
+            fast_cdc_chunkers.clone(),
+            read_files_in_dir_sorted_by_name,
+        ),
+        Benchmark::new("64KB_Buz".to_string(), 64 * KB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
         Benchmark::new(
             "64KB_fsd".to_string(),
             64 * KB,
             standard_chunkers.clone(),
             read_files_in_dir_sorted_by_size_desc,
         ),
-        Benchmark::new("64KB".to_string(), 64 * KB, standard_chunkers, read_files_in_dir_sorted_by_name),
+        Benchmark::new("64KB".to_string(), 64 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
+        Benchmark::new("128KB_FastCdc".to_string(), 128 * KB, fast_cdc_chunkers, read_files_in_dir_sorted_by_name),
+        Benchmark::new("128KB_Buz".to_string(), 128 * KB, buzhash_chunkers, read_files_in_dir_sorted_by_name),
+        Benchmark::new(
+            "128KB_fsd".to_string(),
+            128 * KB,
+            standard_chunkers.clone(),
+            read_files_in_dir_sorted_by_size_desc,
+        ),
+        Benchmark::new("128KB".to_string(), 128 * KB, standard_chunkers, read_files_in_dir_sorted_by_name),
     ];
     run_benchmarks(benchmarks)?;
 
