@@ -81,7 +81,7 @@ fn run_without_file_boundaries(
 ) -> std::io::Result<AlgorithmResult> {
     let (name, chunker_builder) = named_chunker;
     let chunker = chunker_builder(chunk_sizes);
-    let mut cdc_result = AlgorithmResult::new(name.clone());
+    let mut cdc_result = AlgorithmResult::new(name.clone(), 2);
     let mut process_directory = |dir: &'static str| -> std::io::Result<()> {
         let source = BufReader::with_capacity(16 * MB, MultiFileRead::new(get_files(dir))?);
         for result in ChunkStream::new(source, &chunker, chunk_sizes) {
@@ -90,8 +90,8 @@ fn run_without_file_boundaries(
         }
         Ok(())
     };
-    process_directory("extracted/postgres-15.2-extracted")?;
-    process_directory("extracted/postgres-15.3-extracted")?;
+    process_directory("data/extracted/postgres-15.2-extracted")?;
+    process_directory("data/extracted/postgres-15.3-extracted")?;
     cdc_result.complete();
     Ok(cdc_result)
 }

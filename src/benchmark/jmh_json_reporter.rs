@@ -72,7 +72,7 @@ pub fn write_results_jmh_json(
                             score_unit: "KB",
                             score_error: limit_precision(result.chunk_size_std() / KB as f64),
                             raw_data: vec![vec![
-                                limit_precision(result.min_chunk_size() / KB as f64),
+                                limit_precision(result.min_not_last_chunk_size() / KB as f64),
                                 limit_precision(result.max_chunk_size() / KB as f64),
                             ]],
                         },

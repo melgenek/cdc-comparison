@@ -11,10 +11,11 @@ pub struct AlgorithmResult {
     chunk_count: usize,
     start: Instant,
     duration: Duration,
+    input_count: usize,
 }
 
 impl AlgorithmResult {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, input_count: usize) -> Self {
         AlgorithmResult {
             name,
             chunks: HashMap::new(),
@@ -22,6 +23,7 @@ impl AlgorithmResult {
             chunk_count: 0,
             start: Instant::now(),
             duration: Duration::ZERO,
+            input_count,
         }
     }
 
@@ -74,8 +76,13 @@ impl AlgorithmResult {
         variance.sqrt()
     }
 
-    pub fn min_chunk_size(&self) -> f64 {
-        self.chunks.values().map(|v| *v).min().unwrap() as f64
+    pub fn min_not_last_chunk_size(&self) -> f64 {
+        let mut chunk_lengths: Vec<&usize> = self.chunks.values().collect();
+        chunk_lengths.sort();
+        let (min_chunk_size, rest) = chunk_lengths.split_first().unwrap();
+        let nth_chunk_size = rest.into_iter().skip(self.input_count - 1).next().unwrap_or(min_chunk_size);
+
+        **nth_chunk_size as f64
     }
 
     pub fn max_chunk_size(&self) -> f64 {
