@@ -14,6 +14,7 @@ use chunkers::ported::google_stadia_cdc::GoogleStadiaCdc;
 use chunkers::ported::restic::chunker::ResticCdc;
 use chunkers::ported::restic::polynomial::Pol;
 use chunkers::ported::ronomon::RonomonCdc;
+use std::path::{Path, PathBuf};
 use util::{read_files_in_dir_sorted_by_name, read_files_in_dir_sorted_by_size_desc, KB};
 
 mod benchmark;
@@ -207,7 +208,13 @@ fn main() -> std::io::Result<()> {
         ),
         Benchmark::new("74_4MB".to_string(), 4 * MB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
     ];
-    run_benchmarks(benchmarks)?;
+
+    let input_dirs: Vec<PathBuf> = vec![
+        PathBuf::from("data/extracted/postgres-15.2-extracted"),
+        PathBuf::from("data/extracted/postgres-15.3-extracted"),
+    ];
+    let output_dir = Path::new("results");
+    run_benchmarks(benchmarks, input_dirs, output_dir)?;
 
     Ok(())
 }

@@ -4,6 +4,7 @@ use crate::util::{limit_precision, KB};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
+use std::path::Path;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,15 +33,17 @@ fn chunk_sizes_to_bench_name(chunk_sizes: &ChunkSizes) -> String {
 }
 
 pub fn write_results_jmh_json(
+    output_dir: &Path,
     benchmark_name: &str,
     results: &Vec<(ChunkSizes, Vec<AlgorithmResult>)>,
 ) -> std::io::Result<()> {
-    fs::create_dir_all("results/json")?;
+    let output_dir = output_dir.join("json");
+    fs::create_dir_all(&output_dir)?;
     let f = fs::OpenOptions::new()
         .write(true)
         .truncate(true)
         .create(true)
-        .open(format!("results/json/{}.json", benchmark_name))?;
+        .open(output_dir.join(benchmark_name).with_extension("json"))?;
 
     let jmh_benchmarks: Vec<JmhBenchmark> = results
         .into_iter()

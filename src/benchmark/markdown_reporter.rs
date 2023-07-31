@@ -5,17 +5,20 @@ use markdown_table::{Heading, MarkdownTable};
 use std::cmp::Ordering;
 use std::fs;
 use std::io::Write;
+use std::path::Path;
 
 pub fn write_results_markdown(
+    output_dir: &Path,
     benchmark_name: &str,
     results: &Vec<(ChunkSizes, Vec<AlgorithmResult>)>,
 ) -> std::io::Result<()> {
-    fs::create_dir_all("results/markdown")?;
+    let output_dir = output_dir.join("markdown");
+    fs::create_dir_all(&output_dir)?;
     let mut f = fs::OpenOptions::new()
         .write(true)
         .truncate(true)
         .create(true)
-        .open(format!("results/markdown/{}.md", benchmark_name))?;
+        .open(output_dir.join(benchmark_name).with_extension("md"))?;
     f.write_all(b"### Deduplication ratio % (the more, the better):\n\n")?;
     f.write_all(
         convert_results_to_markdown(
