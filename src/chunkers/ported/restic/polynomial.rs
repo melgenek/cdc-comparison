@@ -1,18 +1,52 @@
+// This code is ported from the https://github.com/restic/chunker/tree/db20dabc1bbeee68a21930061a3617d31fed1f29
+//
+// Copyright (c) 2014, Alexander Neumann <alexander@bumpern.de>
+// Copyright (c) 2023, melgenek
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this
+//    list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use std::cmp::Ordering;
 use std::ops::{Add, BitAnd, BitOr, Div, Mul, Rem, Shl};
 
+/// Pol is a polynomial from F_2\[X\].
 #[derive(Copy, Clone, Debug)]
 pub struct Pol(u64);
 
 impl Pol {
     pub const ZERO: Pol = Pol(0);
 
+    /// Returns a new random irreducible polynomial of degree 53 using.
+    /// It is equivalent to calling [Pol::generate_random_from_seed] with seed `1`.
     pub fn generate_random() -> Pol {
         Self::generate_random_from_seed(1)
     }
 
+    /// Returns an irreducible polynomial of degree 53 (largest prime number below 64-8) by generating random values.
+    /// There are (2^53-2/53) irreducible polynomials of degree 53 in F_2\[X\],
+    /// c.f. Michael O. Rabin (1981): "Fingerprinting by Random Polynomials", page 4.
+    /// If no polynomial could be found in one million tries, the function panics.
     pub fn generate_random_from_seed(seed: u64) -> Pol {
         let mut rng = ChaCha20Rng::seed_from_u64(seed);
         for _ in 0..1_000_000 {
@@ -33,10 +67,12 @@ impl Pol {
         self.0
     }
 
+    /// Returns the degree of the polynomial x. If x is zero, -1 is returned.
     pub fn deg(&self) -> i32 {
         63 as i32 - self.0.leading_zeros() as i32
     }
 
+    /// Computes the Greatest Common Divisor x and f.
     fn gcd(x: Pol, f: Pol) -> Pol {
         if f == 0 {
             x
@@ -68,8 +104,11 @@ impl Pol {
         }
     }
 
+    /// Irreducible returns true if x is irreducible over F_2.
+    /// This function uses Ben Or's reducibility test.
+    /// For details see "Tests and Constructions of Irreducible Polynomials over Finite Fields".
     pub fn is_irreducible(&self) -> bool {
-        /// computes the polynomial (x^(2^p)-x) mod g. This is needed for the reducibility test.
+        /// Computes the polynomial (x^(2^p)-x) mod g
         fn qp(p: i32, g: Pol) -> Pol {
             let num = 1 << p;
             let mut res = Pol(2);
@@ -89,9 +128,9 @@ impl Pol {
         true
     }
 
-    // DivMod returns x / d = q, and remainder r,
-    // see https://en.wikipedia.org/wiki/Division_algorithm
-    fn div_rem(self, d: Pol) -> (Pol, Pol) {
+    /// Returns x / d = q, and remainder r,
+    /// see https://en.wikipedia.org/wiki/Division_algorithm
+    fn div_mod(self, d: Pol) -> (Pol, Pol) {
         if self == 0 {
             (Pol(0), Pol(0))
         } else if d == 0 {
@@ -168,14 +207,16 @@ impl Shl<i32> for Pol {
     }
 }
 
+/// Returns the integer division result x / d.
 impl Div for Pol {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        self.div_rem(rhs).0
+        self.div_mod(rhs).0
     }
 }
 
+/// Returns x*y. When an overflow occurs, Mul panics.
 impl Mul for Pol {
     type Output = Self;
 
@@ -206,11 +247,12 @@ impl Mul for Pol {
     }
 }
 
+/// Returns the remainder of x / d
 impl Rem for Pol {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
-        self.div_rem(rhs).1
+        self.div_mod(rhs).1
     }
 }
 

@@ -1,3 +1,34 @@
+// This code is ported from the https://github.com/nlfiedler/fastcdc-rs/tree/0f165fc5fd76e4c9b267bc4fa3a4ec6fcb78fe60
+// The MIT License (MIT)
+//
+// Copyright (c) 2023 Nathan Fiedler
+// Copyright (c) 2023 melgenek
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+//! This module implements the canonical FastCDC algorithm as described in the
+//! [paper](https://www.usenix.org/system/files/conference/atc16/atc16-paper-xia.pdf)
+//! by Wen Xia, et al., in 2016.
+//!
+//! The algorithm incorporates a simplified hash judgement using the fast Gear
+//! hash, sub-minimum chunk cut-point skipping, and normalized chunking to
+//! produce chunks of a more consistent length.
 use crate::chunkers::chunk_sizes::ChunkSizes;
 use crate::chunkers::chunker::Chunker;
 use crate::util::logarithm2;

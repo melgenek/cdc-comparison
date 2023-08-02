@@ -59,11 +59,8 @@ impl Chunker for Buzhash32Reg {
         while i < buf.len() {
             if (digest & rc_mask) == 0 {
                 if digest <= self.threshold {
-                    // This hash matches the target length hash criteria, return it.
                     return i;
                 }
-                // This is a better regression point. Set it as the new rc_len and
-                // update rc_mask to check as many MSBits as this hash would pass.
                 rc_len = i;
                 rc_mask = u32::MAX;
                 while (digest & rc_mask) > 0 {

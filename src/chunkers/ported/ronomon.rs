@@ -1,3 +1,50 @@
+// This code is ported from the https://github.com/nlfiedler/fastcdc-rs/tree/0f165fc5fd76e4c9b267bc4fa3a4ec6fcb78fe60
+// The MIT License (MIT)
+//
+// Copyright (c) 2017 Ronomon
+// Copyright (c) 2020 Nathan Fiedler
+// Copyright (c) 2023 melgenek
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+//! This module implements a variation of the FastCDC algorithm using
+//! 31-integers and right shifts instead of left shifts.
+//!
+//! The explanation below is copied from
+//! [ronomon/deduplication](https://github.com/ronomon/deduplication) since this
+//! module is little more than a translation of that implementation:
+//!
+//! > The following optimizations and variations on FastCDC are involved in the
+//! > chunking algorithm:
+//! > * 31 bit integers to avoid 64 bit integers for the sake of the Javascript
+//! >   reference implementation.
+//! > * A right shift instead of a left shift to remove the need for an
+//! >   additional modulus operator, which would otherwise have been necessary
+//! >   to prevent overflow.
+//! > * Masks are no longer zero-padded since a right shift is used instead of a
+//! >   left shift.
+//! > * A more adaptive threshold based on a combination of average and minimum
+//! >   chunk size (rather than just average chunk size) to decide the pivot
+//! >   point at which to switch masks. A larger minimum chunk size now switches
+//! >   from the strict mask to the eager mask earlier.
+//! > * Masks use 1 bit of chunk size normalization instead of 2 bits of chunk
+//! >   size normalization.
 use crate::chunkers::chunk_sizes::ChunkSizes;
 use crate::chunkers::chunker::Chunker;
 use crate::util::logarithm2;

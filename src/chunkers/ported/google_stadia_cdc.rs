@@ -1,3 +1,41 @@
+// This code is ported from the https://github.com/google/cdc-file-transfer/tree/fcc4cbc3f348d55c11fc24d539183a81eebf1492
+//
+// Copyright 2022 Google LLC
+// Copyright 2023 melgenek
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//! Implements a very fast content-defined chunking algorithm.
+//!
+//! FastCDC [1] identifies chunk boundaries based on a simple yet efficient
+//! "gear" rolling hash, a "normalized chunking" algorithm using a stepped
+//! chunk probability with a pair spread-out bitmasks for the '!(hash&mask)'
+//! "hash criteria".
+//!
+//! This library implements a modified version based on rollsum-chunking [2]
+//! tests and analysis that showed simple "exponential chunking" gives better
+//! deduplication, and a 'hash<=threshold' "hash criteria" works better for
+//! the gear rollsum and can support arbitrary non-power-of-two sizes.
+//!
+//! For limiting block sizes it uses a modified version of "Regression
+//! Chunking"[3] with an arbitrary number of regressions using power-of-2
+//! target block lengths (not multiples of the target block length, which
+//! doesn't have to be a power-of-2). This means we can use a bitmask for the
+//! most significant bits for the regression hash criteria.
+//!
+//! [1] https://!www.usenix.org/system/files/conference/atc16/atc16-paper-xia.pdf.
+//! [2] https://!github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst
+//! [3] https://!www.usenix.org/system/files/conference/atc12/atc12-final293.pdf
 use crate::chunkers::chunk_sizes::ChunkSizes;
 use crate::chunkers::chunker::Chunker;
 
@@ -138,6 +176,7 @@ impl Chunker for GoogleStadiaCdc {
             i += 1;
         }
 
+        // Return best regression point we found or the end if it's better.
         if (digest & rc_mask) > 0 {
             rc_len
         } else {

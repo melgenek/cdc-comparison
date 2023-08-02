@@ -1,3 +1,35 @@
+// This code is ported from the https://github.com/nlfiedler/fastcdc-rs/tree/0f165fc5fd76e4c9b267bc4fa3a4ec6fcb78fe60
+// The MIT License (MIT)
+//
+// Copyright (c) 2023 Nathan Fiedler
+// Copyright (c) 2023 melgenek
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+//! This module implements the canonical FastCDC algorithm as described in the
+//! [paper](https://ieeexplore.ieee.org/document/9055082) by Wen Xia, et al., in 2020.
+//!
+//! The algorithm incorporates a simplified hash judgement using the fast Gear
+//! hash, sub-minimum chunk cut-point skipping, normalized chunking to produce
+//! chunks of a more consistent length, and "rolling two bytes each time".
+//! According to the authors, this should be 30-40% faster than the 2016 version
+//! while producing the same cut points.
 use crate::chunkers::chunk_sizes::ChunkSizes;
 use crate::chunkers::chunker::Chunker;
 use crate::util::logarithm2;
@@ -114,10 +146,8 @@ const GEAR: [u64; 256] = [
     0x8e3e4221d3614413, 0xef14d0d86bf1a22c, 0xe1d830d3f16c5ddb, 0xaabd2b2a451504e1
 ];
 
-//
 // GEAR table in which all values have been shifted left 1 bit, as per the
 // FastCDC 2020 paper, section 3.7.
-//
 #[rustfmt::skip]
 const GEAR_LS: [u64; 256] = [
     0x76ba78fa40fc6fb8, 0xf09ad1752224610c, 0x9aa5101f105ce530, 0xd59f1c9c33fb994e,

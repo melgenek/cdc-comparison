@@ -6,11 +6,6 @@ pub const MINIMUM_MIN: usize = 64;
 pub const AVERAGE_MIN: usize = 64;
 pub const AVERAGE_MAX: usize = 16777216;
 
-// GEAR contains seemingly random numbers which are created by computing the
-// MD5 digest of values from 0 to 255, using only the high 8 bytes of the 16
-// byte digest. This is the "gear hash" referred to the in FastCDC paper.
-//
-// The program to produce this table is named table64.rs in examples.
 #[rustfmt::skip]
 const GEAR: [u64; 256] = [
     0x3b5d3c7d207e37dc, 0x784d68ba91123086, 0xcd52880f882e7298, 0xeacf8e4e19fdcca7,
