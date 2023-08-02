@@ -1,6 +1,7 @@
+use crate::benchmark::{avg_to_standard_sizes, evaluate};
 use crate::chunkers::custom::gear_simple_mask::LeftGear;
 use crate::util::MB;
-use benchmark::{run_benchmarks, Benchmark, NamedChunker};
+use benchmark::NamedChunker;
 use chunkers::custom::buzhash32::Buzhash32;
 use chunkers::custom::buzhash32_reg::Buzhash32Reg;
 use chunkers::custom::buzhash64::Buzhash64;
@@ -22,43 +23,14 @@ mod chunkers;
 mod util;
 
 fn main() -> std::io::Result<()> {
-    let standard_chunkers: Vec<NamedChunker> = vec![
-        ("FixedSize".to_string(), |_| Box::new(Fixed::new())),
-        ("LeftGear".to_string(), |sizes| Box::new(LeftGear::new(sizes, 2))),
-        ("Ronomon".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 1))),
-        ("Ronomon64".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 1))),
-        ("Buzhash32_64".to_string(), |sizes| Box::new(Buzhash32::new(sizes, 64))),
-        ("Buzhash32Reg_64".to_string(), |sizes| Box::new(Buzhash32Reg::new(sizes, 64))),
-        ("Buzhash64_48".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 48))),
-        ("Buzhash64_64".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 64))),
-        ("Buzhash64_256".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 256))),
-        ("Buzhash64Reg_48".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 48))),
-        ("Buzhash64Reg_64".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 64))),
-        ("Buzhash64Reg_256".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 256))),
-        ("FastCdc2016".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 2))),
-        ("FastCdc2020".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 2))),
-        ("Restic".to_string(), |sizes| Box::new(ResticCdc::new(Pol::generate_random(), sizes))),
-        ("StadiaCdc".to_string(), |sizes| Box::new(GoogleStadiaCdc::new(sizes))),
-        ("Casync".to_string(), |sizes| Box::new(Casync::new(sizes))),
-    ];
-    let fast_cdc_chunkers: Vec<NamedChunker> = vec![
-        ("FastCdc2016NC0".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 0))),
-        ("FastCdc2016NC1".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 1))),
-        ("FastCdc2016".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 2))),
-        ("FastCdc2016NC3".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 3))),
-        ("FastCdc2020NC0".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 0))),
-        ("FastCdc2020NC1".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 1))),
-        ("FastCdc2020".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 2))),
-        ("FastCdc2020NC3".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 3))),
-        ("RonomonNC0".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 0))),
-        ("Ronomon".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 1))),
-        ("RonomonNC2".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 2))),
-        ("RonomonNC3".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 3))),
-        ("Ronomon64".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 1))),
-        ("Ronomon64NC2".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 2))),
-        ("Ronomon64NC3".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 3))),
-    ];
-    let buzhash_chunkers: Vec<NamedChunker> = vec![
+    evaluate_buzhash()?;
+    evaluate_fast_cdc()?;
+    evaluate_standard()?;
+    Ok(())
+}
+
+fn evaluate_buzhash() -> std::io::Result<()> {
+    let chunkers: Vec<NamedChunker> = vec![
         ("Buzhash32_32".to_string(), |sizes| Box::new(Buzhash32::new(sizes, 32))),
         ("Buzhash32_48".to_string(), |sizes| Box::new(Buzhash32::new(sizes, 48))),
         ("Buzhash32_64".to_string(), |sizes| Box::new(Buzhash32::new(sizes, 64))),
@@ -92,129 +64,98 @@ fn main() -> std::io::Result<()> {
         ("Buzhash64Reg_512".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 512))),
         ("Buzhash64Reg_min_chunk".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, sizes.min_size()))),
     ];
-
-    let benchmarks = vec![
-        Benchmark::new(
-            "11_64KB_FastCdc".to_string(),
-            64 * KB,
-            fast_cdc_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new("12_64KB_Buz".to_string(), 64 * KB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "13_64KB_fsd".to_string(),
-            64 * KB,
-            standard_chunkers.clone(),
-            read_files_in_dir_sorted_by_size_desc,
-        ),
-        Benchmark::new("14_64KB".to_string(), 64 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "21_128KB_FastCdc".to_string(),
-            128 * KB,
-            fast_cdc_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new(
-            "22_128KB_Buz".to_string(),
-            128 * KB,
-            buzhash_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new(
-            "23_128KB_fsd".to_string(),
-            128 * KB,
-            standard_chunkers.clone(),
-            read_files_in_dir_sorted_by_size_desc,
-        ),
-        Benchmark::new("24_128KB".to_string(), 128 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "31_256KB_FastCdc".to_string(),
-            256 * KB,
-            fast_cdc_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new(
-            "32_256KB_Buz".to_string(),
-            256 * KB,
-            buzhash_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new(
-            "33_256KB_fsd".to_string(),
-            256 * KB,
-            standard_chunkers.clone(),
-            read_files_in_dir_sorted_by_size_desc,
-        ),
-        Benchmark::new("34_256KB".to_string(), 256 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "41_512KB_FastCdc".to_string(),
-            512 * KB,
-            fast_cdc_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new(
-            "42_512KB_Buz".to_string(),
-            512 * KB,
-            buzhash_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new(
-            "43_512KB_fsd".to_string(),
-            512 * KB,
-            standard_chunkers.clone(),
-            read_files_in_dir_sorted_by_size_desc,
-        ),
-        Benchmark::new("44_512KB".to_string(), 512 * KB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "51_1MB_FastCdc".to_string(),
-            1 * MB,
-            fast_cdc_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new("52_1MB_Buz".to_string(), 1 * MB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "53_1MB_fsd".to_string(),
-            1 * MB,
-            standard_chunkers.clone(),
-            read_files_in_dir_sorted_by_size_desc,
-        ),
-        Benchmark::new("54_1MB".to_string(), 1 * MB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "61_2MB_FastCdc".to_string(),
-            2 * MB,
-            fast_cdc_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new("62_2MB_Buz".to_string(), 2 * MB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "63_2MB_fsd".to_string(),
-            2 * MB,
-            standard_chunkers.clone(),
-            read_files_in_dir_sorted_by_size_desc,
-        ),
-        Benchmark::new("64_2MB".to_string(), 2 * MB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "71_4MB_FastCdc".to_string(),
-            4 * MB,
-            fast_cdc_chunkers.clone(),
-            read_files_in_dir_sorted_by_name,
-        ),
-        Benchmark::new("72_4MB_Buz".to_string(), 4 * MB, buzhash_chunkers.clone(), read_files_in_dir_sorted_by_name),
-        Benchmark::new(
-            "73_4MB_fsd".to_string(),
-            4 * MB,
-            standard_chunkers.clone(),
-            read_files_in_dir_sorted_by_size_desc,
-        ),
-        Benchmark::new("74_4MB".to_string(), 4 * MB, standard_chunkers.clone(), read_files_in_dir_sorted_by_name),
-    ];
-
     let input_dirs: Vec<PathBuf> = vec![
         PathBuf::from("data/extracted/postgres-15.2-extracted"),
         PathBuf::from("data/extracted/postgres-15.3-extracted"),
     ];
-    let output_dir = Path::new("results");
-    run_benchmarks(benchmarks, input_dirs, output_dir)?;
+    evaluate(
+        vec![64 * KB, 128 * KB, 256 * KB, 512 * KB, 1 * MB, 2 * MB, 4 * MB],
+        avg_to_standard_sizes,
+        chunkers.clone(),
+        read_files_in_dir_sorted_by_name,
+        input_dirs.clone(),
+        Path::new("results/name_asc/buz"),
+    )?;
+
+    Ok(())
+}
+
+fn evaluate_fast_cdc() -> std::io::Result<()> {
+    let chunkers: Vec<NamedChunker> = vec![
+        ("FastCdc2016NC0".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 0))),
+        ("FastCdc2016NC1".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 1))),
+        ("FastCdc2016".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 2))),
+        ("FastCdc2016NC3".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 3))),
+        ("FastCdc2020NC0".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 0))),
+        ("FastCdc2020NC1".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 1))),
+        ("FastCdc2020".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 2))),
+        ("FastCdc2020NC3".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 3))),
+        ("RonomonNC0".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 0))),
+        ("Ronomon".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 1))),
+        ("RonomonNC2".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 2))),
+        ("RonomonNC3".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 3))),
+        ("Ronomon64NC0".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 0))),
+        ("Ronomon64".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 1))),
+        ("Ronomon64NC2".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 2))),
+        ("Ronomon64NC3".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 3))),
+    ];
+    let input_dirs: Vec<PathBuf> = vec![
+        PathBuf::from("data/extracted/postgres-15.2-extracted"),
+        PathBuf::from("data/extracted/postgres-15.3-extracted"),
+    ];
+    evaluate(
+        vec![64 * KB, 128 * KB, 256 * KB, 512 * KB, 1 * MB, 2 * MB, 4 * MB],
+        avg_to_standard_sizes,
+        chunkers.clone(),
+        read_files_in_dir_sorted_by_name,
+        input_dirs.clone(),
+        Path::new("results/name_asc/fast_cdc"),
+    )?;
+
+    Ok(())
+}
+
+fn evaluate_standard() -> std::io::Result<()> {
+    let chunkers: Vec<NamedChunker> = vec![
+        ("FixedSize".to_string(), |_| Box::new(Fixed::new())),
+        ("LeftGear".to_string(), |sizes| Box::new(LeftGear::new(sizes, 2))),
+        ("Ronomon".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 1))),
+        ("Ronomon64".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 1))),
+        ("Buzhash32_64".to_string(), |sizes| Box::new(Buzhash32::new(sizes, 64))),
+        ("Buzhash32Reg_64".to_string(), |sizes| Box::new(Buzhash32Reg::new(sizes, 64))),
+        ("Buzhash64_48".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 48))),
+        ("Buzhash64_64".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 64))),
+        ("Buzhash64_256".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 256))),
+        ("Buzhash64Reg_48".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 48))),
+        ("Buzhash64Reg_64".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 64))),
+        ("Buzhash64Reg_256".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 256))),
+        ("FastCdc2016".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 2))),
+        ("FastCdc2020".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 2))),
+        ("Restic".to_string(), |sizes| Box::new(ResticCdc::new(Pol::generate_random(), sizes))),
+        ("StadiaCdc".to_string(), |sizes| Box::new(GoogleStadiaCdc::new(sizes))),
+        ("Casync".to_string(), |sizes| Box::new(Casync::new(sizes))),
+    ];
+    let input_dirs: Vec<PathBuf> = vec![
+        PathBuf::from("data/extracted/postgres-15.2-extracted"),
+        PathBuf::from("data/extracted/postgres-15.3-extracted"),
+    ];
+    let avg_sizes = vec![64 * KB, 128 * KB, 256 * KB, 512 * KB, 1 * MB, 2 * MB, 4 * MB];
+    evaluate(
+        avg_sizes.clone(),
+        avg_to_standard_sizes,
+        chunkers.clone(),
+        read_files_in_dir_sorted_by_name,
+        input_dirs.clone(),
+        Path::new("results/name_asc/standard"),
+    )?;
+    evaluate(
+        avg_sizes,
+        avg_to_standard_sizes,
+        chunkers,
+        read_files_in_dir_sorted_by_size_desc,
+        input_dirs,
+        Path::new("results/size_desc/standard"),
+    )?;
 
     Ok(())
 }

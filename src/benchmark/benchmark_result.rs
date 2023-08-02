@@ -1,3 +1,4 @@
+use crate::chunkers::chunk_sizes::ChunkSizes;
 use crate::chunkers::chunk_stream::Chunk;
 use crate::util::sha256;
 use std::collections::HashMap;
@@ -6,6 +7,7 @@ use std::time::{Duration, Instant};
 #[derive(Debug, Clone)]
 pub struct AlgorithmResult {
     name: String,
+    chunk_sizes: ChunkSizes,
     chunks: HashMap<String, usize>,
     total_size: usize,
     chunk_count: usize,
@@ -15,9 +17,10 @@ pub struct AlgorithmResult {
 }
 
 impl AlgorithmResult {
-    pub fn new(name: String, input_count: usize) -> Self {
+    pub fn new(name: String, chunk_sizes: ChunkSizes, input_count: usize) -> Self {
         AlgorithmResult {
             name,
+            chunk_sizes,
             chunks: HashMap::new(),
             total_size: 0,
             chunk_count: 0,
@@ -40,6 +43,10 @@ impl AlgorithmResult {
 
     pub fn name(&self) -> &str {
         self.name.as_str()
+    }
+
+    pub fn chunk_sizes(&self) -> &ChunkSizes {
+        &self.chunk_sizes
     }
 
     pub fn duration_seconds(&self) -> f32 {

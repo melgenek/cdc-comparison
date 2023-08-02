@@ -1,7 +1,7 @@
 use crate::util::size_to_str;
 use std::fmt::{Display, Formatter};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ChunkSizes {
     min_size: usize,
     avg_size: usize,

@@ -1,16 +1,17 @@
 use crate::benchmark::benchmark_result::AlgorithmResult;
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::util::size_to_str_f64;
+use crate::benchmark::ChunkerName;
+use crate::util::{size_to_str, size_to_str_f64};
 use markdown_table::{Heading, MarkdownTable};
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 
 pub fn write_results_markdown(
     output_dir: &Path,
-    benchmark_name: &str,
-    results: &Vec<(ChunkSizes, Vec<AlgorithmResult>)>,
+    avg_size: usize,
+    results: &HashMap<ChunkerName, Vec<AlgorithmResult>>,
 ) -> std::io::Result<()> {
     let output_dir = output_dir.join("markdown");
     fs::create_dir_all(&output_dir)?;
@@ -18,7 +19,7 @@ pub fn write_results_markdown(
         .write(true)
         .truncate(true)
         .create(true)
-        .open(output_dir.join(benchmark_name).with_extension("md"))?;
+        .open(output_dir.join(size_to_str(avg_size)).with_extension("md"))?;
     f.write_all(b"### Deduplication ratio % (the more, the better):\n\n")?;
     f.write_all(
         convert_results_to_markdown(
@@ -52,7 +53,11 @@ pub fn write_results_markdown(
             |result| {
                 format!("{}±{}", size_to_str_f64(result.chunk_size_avg()), size_to_str_f64(result.chunk_size_std()))
             },
-            |_, _| Ordering::Less,
+            |r1, r2| {
+                let r1_diff = (r1.chunk_size_avg() - avg_size as f64).abs();
+                let r2_diff = (r2.chunk_size_avg() - avg_size as f64).abs();
+                r1_diff.total_cmp(&r2_diff)
+            },
         )
         .as_bytes(),
     )?;
@@ -69,7 +74,7 @@ pub fn write_results_markdown(
 }
 
 pub fn convert_results_to_markdown<F, C>(
-    results: &Vec<(ChunkSizes, Vec<AlgorithmResult>)>,
+    results: &HashMap<ChunkerName, Vec<AlgorithmResult>>,
     result_to_string: F,
     comparator: C,
 ) -> String
@@ -77,14 +82,16 @@ where
     F: Fn(&AlgorithmResult) -> String,
     C: Fn(&AlgorithmResult, &AlgorithmResult) -> Ordering,
 {
-    let names: Vec<&str> =
-        results.get(0).map_or_else(|| Vec::new(), |results| results.1.iter().map(|result| result.name()).collect());
-    let mut headings: Vec<Heading> = names.iter().map(|name| Heading::new(name.to_string(), None)).collect();
-    headings.insert(0, Heading::new("chunk sizes/names".to_string(), None));
+    let column_names = results
+        .values()
+        .next()
+        .map_or_else(|| Vec::new(), |results| results.iter().map(|result| result.chunk_sizes()).collect());
+    let mut headings: Vec<Heading> = column_names.iter().map(|name| Heading::new(name.to_string(), None)).collect();
+    headings.insert(0, Heading::new("names/chunk sizes".to_string(), None));
 
     let values: Vec<Vec<String>> = results
         .into_iter()
-        .map(|(chunk_sizes, values)| {
+        .map(|(chunker_name, values)| {
             let mut sorted_values = values.clone();
             sorted_values.sort_by(&comparator);
             let mut row: Vec<String> = values
@@ -102,7 +109,7 @@ where
                     }
                 })
                 .collect();
-            row.insert(0, chunk_sizes.to_string());
+            row.insert(0, chunker_name.to_string());
             row
         })
         .collect();
