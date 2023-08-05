@@ -1,4 +1,4 @@
-use crate::benchmark::{avg_to_standard_sizes, evaluate};
+use crate::benchmark::{avg_to_standard_sizes, evaluate, evaluate_full_files};
 use crate::chunkers::custom::gear_simple_mask::LeftGear;
 use crate::util::MB;
 use benchmark::NamedChunker;
@@ -23,9 +23,17 @@ mod chunkers;
 mod util;
 
 fn main() -> std::io::Result<()> {
+    evaluate_full_files(
+        vec![
+            PathBuf::from("data/extracted/postgres-15.2-extracted"),
+            PathBuf::from("data/extracted/postgres-15.3-extracted"),
+        ],
+        Path::new("results"),
+    )?;
     evaluate_buzhash()?;
     evaluate_fast_cdc()?;
     evaluate_standard()?;
+    evaluate_standard_llvm()?;
     Ok(())
 }
 
@@ -155,6 +163,43 @@ fn evaluate_standard() -> std::io::Result<()> {
         read_files_in_dir_sorted_by_size_desc,
         input_dirs,
         Path::new("results/size_desc/standard"),
+    )?;
+
+    Ok(())
+}
+
+fn evaluate_standard_llvm() -> std::io::Result<()> {
+    let chunkers: Vec<NamedChunker> = vec![
+        ("FixedSize".to_string(), |_| Box::new(Fixed::new())),
+        ("LeftGear".to_string(), |sizes| Box::new(LeftGear::new(sizes, 2))),
+        ("Ronomon".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 1))),
+        ("Ronomon64".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 1))),
+        ("Buzhash32_64".to_string(), |sizes| Box::new(Buzhash32::new(sizes, 64))),
+        ("Buzhash32Reg_64".to_string(), |sizes| Box::new(Buzhash32Reg::new(sizes, 64))),
+        ("Buzhash64_48".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 48))),
+        ("Buzhash64_64".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 64))),
+        ("Buzhash64_256".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 256))),
+        ("Buzhash64Reg_48".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 48))),
+        ("Buzhash64Reg_64".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 64))),
+        ("Buzhash64Reg_256".to_string(), |sizes| Box::new(Buzhash64Reg::new(sizes, 256))),
+        ("FastCdc2016".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 2))),
+        ("FastCdc2020".to_string(), |sizes| Box::new(FastCdc2020::new(sizes, 2))),
+        ("Restic".to_string(), |sizes| Box::new(ResticCdc::new(Pol::generate_random(), sizes))),
+        ("StadiaCdc".to_string(), |sizes| Box::new(GoogleStadiaCdc::new(sizes))),
+        ("Casync".to_string(), |sizes| Box::new(Casync::new(sizes))),
+    ];
+    let input_dirs: Vec<PathBuf> = vec![
+        PathBuf::from("data/extracted/postgres-15.2-extracted/usr/lib/x86_64-linux-gnu/libLLVM-11.so.1"), // 81MB
+        PathBuf::from("data/extracted/postgres-15.3-extracted/usr/lib/x86_64-linux-gnu/libLLVM-14.so.1"), // 105MB
+    ];
+    let avg_sizes = vec![64 * KB, 128 * KB, 256 * KB, 512 * KB, 1 * MB, 2 * MB, 4 * MB];
+    evaluate(
+        avg_sizes.clone(),
+        avg_to_standard_sizes,
+        chunkers.clone(),
+        read_files_in_dir_sorted_by_name,
+        input_dirs.clone(),
+        Path::new("results/llvm/standard"),
     )?;
 
     Ok(())

@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -38,6 +40,20 @@ pub fn sha256(bytes: &[u8]) -> String {
     let mut context = Context::new(&SHA256);
     context.update(&bytes);
     HEXLOWER.encode(context.finish().as_ref())
+}
+
+pub fn sha256_file<P: AsRef<Path>>(path: P) -> std::io::Result<String> {
+    let mut context = Context::new(&SHA256);
+    let mut buffer = vec![0; 1 * MB];
+    let mut file = File::open(path)?;
+    loop {
+        let count = file.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        context.update(&buffer[..count]);
+    }
+    Ok(HEXLOWER.encode(context.finish().as_ref()))
 }
 
 /// Base-2 logarithm

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::io::BufReader;
+use std::fs;
+use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
 
 use rayon::prelude::*;
@@ -11,7 +12,7 @@ use crate::chunkers::chunk_sizes::ChunkSizes;
 use crate::chunkers::chunk_stream::ChunkStream;
 use crate::chunkers::chunker::Chunker;
 use crate::util::multi_file_dir::MultiFileRead;
-use crate::util::MB;
+use crate::util::{read_files_in_dir_sorted_by_name, sha256_file, MB};
 
 mod benchmark_result;
 mod jmh_json_reporter;
@@ -73,8 +74,8 @@ fn run_size(
     for chunker in chunkers_with_names {
         let chunk_sizes = avg_size_to_chunk_sizes(avg_size);
         let size_results: Vec<std::io::Result<AlgorithmResult>> = chunk_sizes
-            .par_iter()
-            .map(|sizes| run_without_file_boundaries(input_dirs.clone(), *sizes, &chunker, &get_files))
+            .into_par_iter()
+            .map(|sizes| run_without_file_boundaries(input_dirs.clone(), sizes, &chunker, &get_files))
             .collect();
         let size_results = size_results.into_iter().collect::<std::io::Result<Vec<AlgorithmResult>>>()?;
         for algorithm_result in &size_results {
@@ -111,4 +112,20 @@ fn run_without_file_boundaries(
     }
     cdc_result.complete();
     Ok(cdc_result)
+}
+
+pub fn evaluate_full_files(input_dirs: Vec<PathBuf>, output_dir: &Path) -> std::io::Result<()> {
+    let mut files: HashMap<String, u64> = HashMap::new();
+    let mut total_size: u64 = 0;
+    for file_path in input_dirs.iter().flat_map(read_files_in_dir_sorted_by_name) {
+        let file_hash = sha256_file(&file_path)?;
+        let file_size = fs::metadata(file_path)?.len();
+        total_size += file_size;
+        files.insert(file_hash, file_size);
+    }
+    let dedup_ratio = (total_size - files.values().sum::<u64>()) as f64 / total_size as f64 * 100.0;
+    let mut f = fs::OpenOptions::new().write(true).truncate(true).create(true).open(output_dir.join("full_size.md"))?;
+    f.write_all(format!("Dirs: {:?}\n", input_dirs).as_bytes())?;
+    f.write_all(format!("Dedup ratio: {}\n", dedup_ratio).as_bytes())?;
+    Ok(())
 }
