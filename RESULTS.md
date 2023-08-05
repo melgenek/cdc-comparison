@@ -63,8 +63,8 @@ and it indeed gives the best deduplication ratio across all chunk sizes.
 
 ### Restic
 
-1. The default `2*avg/avg/8*avg` doesn't give the best deduplication even for the default `avg=1MB`.
-2. Chunk sizes are close to the configured average sizes, especially for `avg>=512KB` and `2*avg/avg/8*avg`.
+1. The default `0.5*avg/avg/8*avg` doesn't give the best deduplication even for the default `avg=1MB`.
+2. Chunk sizes are close to the configured average sizes, especially for `avg>=512KB` and `0.5*avg/avg/8*avg`.
 
 ## Chunk sizes
 
