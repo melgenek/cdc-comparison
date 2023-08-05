@@ -74,12 +74,12 @@ const GEAR: [u64; 256] = [
     0x8e3e4221d3614413, 0xef14d0d86bf1a22c, 0xe1d830d3f16c5ddb, 0xaabd2b2a451504e1
 ];
 
-pub struct LeftGear {
+pub struct GearSimpleMask {
     mask_s: u64,
     mask_l: u64,
 }
 
-impl LeftGear {
+impl GearSimpleMask {
     pub fn new(chunk_sizes: ChunkSizes, normalization_level: u32) -> Self {
         assert!(chunk_sizes.min_size() >= MINIMUM_MIN);
         assert!(chunk_sizes.avg_size() >= AVERAGE_MIN && chunk_sizes.avg_size() <= AVERAGE_MAX);
@@ -90,7 +90,7 @@ impl LeftGear {
     }
 }
 
-impl Chunker for LeftGear {
+impl Chunker for GearSimpleMask {
     fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
         let buf_length = buf.len();
         let center = if buf_length < chunk_sizes.avg_size() { buf_length } else { chunk_sizes.avg_size() };

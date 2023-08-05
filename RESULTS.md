@@ -65,8 +65,3 @@ and it indeed gives the best deduplication ratio across all chunk sizes.
 
 1. The default `0.5*avg/avg/8*avg` doesn't give the best deduplication even for the default `avg=1MB`.
 2. Chunk sizes are close to the configured average sizes, especially for `avg>=512KB` and `0.5*avg/avg/8*avg`.
-
-## Chunk sizes
-
-1. `0.25*avg/avg/4*avg` gives better deduplication ratios for a wide variety of algorithms.
-2. Min size `0.75*avg` decreases deduplication for all chunker algorithms.

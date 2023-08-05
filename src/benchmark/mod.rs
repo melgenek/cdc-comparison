@@ -115,6 +115,7 @@ fn run_without_file_boundaries(
 }
 
 pub fn evaluate_full_files(input_dirs: Vec<PathBuf>, output_dir: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(&output_dir)?;
     let mut files: HashMap<String, u64> = HashMap::new();
     let mut total_size: u64 = 0;
     for file_path in input_dirs.iter().flat_map(read_files_in_dir_sorted_by_name) {

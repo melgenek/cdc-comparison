@@ -1,5 +1,6 @@
 use crate::benchmark::{avg_to_standard_sizes, evaluate, evaluate_full_files};
-use crate::chunkers::custom::gear_simple_mask::LeftGear;
+use crate::chunkers::custom::adler32::Adler32;
+use crate::chunkers::custom::gear_simple_mask::GearSimpleMask;
 use crate::util::MB;
 use benchmark::NamedChunker;
 use chunkers::custom::buzhash32::Buzhash32;
@@ -23,16 +24,16 @@ mod chunkers;
 mod util;
 
 fn main() -> std::io::Result<()> {
-    evaluate_full_files(
-        vec![
-            PathBuf::from("data/extracted/postgres-15.2-extracted"),
-            PathBuf::from("data/extracted/postgres-15.3-extracted"),
-        ],
-        Path::new("results"),
-    )?;
-    evaluate_buzhash()?;
-    evaluate_fast_cdc()?;
-    evaluate_standard()?;
+    // evaluate_full_files(
+    //     vec![
+    //         PathBuf::from("data/extracted/postgres-15.2-extracted"),
+    //         PathBuf::from("data/extracted/postgres-15.3-extracted"),
+    //     ],
+    //     Path::new("results"),
+    // )?;
+    // evaluate_buzhash()?;
+    // evaluate_fast_cdc()?;
+    // evaluate_standard()?;
     evaluate_standard_llvm()?;
     Ok(())
 }
@@ -126,7 +127,8 @@ fn evaluate_fast_cdc() -> std::io::Result<()> {
 fn evaluate_standard() -> std::io::Result<()> {
     let chunkers: Vec<NamedChunker> = vec![
         ("FixedSize".to_string(), |_| Box::new(Fixed::new())),
-        ("LeftGear".to_string(), |sizes| Box::new(LeftGear::new(sizes, 2))),
+        ("GearSimpleMask".to_string(), |sizes| Box::new(GearSimpleMask::new(sizes, 2))),
+        ("Adler32".to_string(), |sizes| Box::new(Adler32::new(sizes, sizes.min_size()))),
         ("Ronomon".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 1))),
         ("Ronomon64".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 1))),
         ("Buzhash32_64".to_string(), |sizes| Box::new(Buzhash32::new(sizes, 64))),
@@ -171,7 +173,8 @@ fn evaluate_standard() -> std::io::Result<()> {
 fn evaluate_standard_llvm() -> std::io::Result<()> {
     let chunkers: Vec<NamedChunker> = vec![
         ("FixedSize".to_string(), |_| Box::new(Fixed::new())),
-        ("LeftGear".to_string(), |sizes| Box::new(LeftGear::new(sizes, 2))),
+        ("GearSimpleMask".to_string(), |sizes| Box::new(GearSimpleMask::new(sizes, 2))),
+        ("Adler32".to_string(), |sizes| Box::new(Adler32::new(sizes, sizes.min_size()))),
         ("Ronomon".to_string(), |sizes| Box::new(RonomonCdc::new(sizes, 1))),
         ("Ronomon64".to_string(), |sizes| Box::new(Ronomon64Cdc::new(sizes, 1))),
         ("Buzhash32_64".to_string(), |sizes| Box::new(Buzhash32::new(sizes, 64))),

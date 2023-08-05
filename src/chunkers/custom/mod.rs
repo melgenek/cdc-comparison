@@ -5,3 +5,4 @@ pub mod buzhash64_reg;
 pub mod fixed_size;
 pub mod gear_simple_mask;
 pub mod ronomon64;
+pub mod adler32;
