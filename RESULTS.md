@@ -65,3 +65,19 @@ and it indeed gives the best deduplication ratio across all chunk sizes.
 
 1. The default `0.5*avg/avg/8*avg` doesn't give the best deduplication even for the default `avg=1MB`.
 2. Chunk sizes are close to the configured average sizes, especially for `avg>=512KB` and `0.5*avg/avg/8*avg`.
+
+### Adler32
+
+1. Small window sizes 32/48/64 skew the chunk sizes to the minimum
+2. It is preferable to have bigger windows to have chunk sizes closer to the average. For example, `min_chunk` or `min_chunk/2`.
+3. Masks with random bits produce a lot of small chunk without any visible impact on the deduplication.
+4. Deduplication deteriorates for chunk sizes >256KB.
+
+### Pci
+
+1. FastCDC-like Normalization almost doesn't influence the algorithm's chunk counts or sizes.
+2. The deduplication is quite stable different average chunk sizes. It doesn't decrease as fast as FastCDC does. 
+![img.png](images/fastcdc2016_dedup.png)
+3. The window size `5` that was used in the paper is not appropriate for chunks bigger than `256KB`, 
+because it produces split points too early. This leads to more and smaller chunks without improved deduplication ratios.
+4. Use window sizes `avg_chunk / 1024` to emit chunks with sizes closer to the average chunk size.
