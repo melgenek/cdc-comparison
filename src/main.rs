@@ -17,28 +17,40 @@ use chunkers::ported::ronomon::RonomonCdc;
 use util::{read_files_in_dir_sorted_by_name, read_files_in_dir_sorted_by_size_desc, KB};
 
 use crate::benchmark::{avg_to_standard_sizes, evaluate, evaluate_full_files};
+use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::chunkers::chunker_with_normalization::ChunkerWithMask;
 use crate::chunkers::custom::adler32::Adler32;
 use crate::chunkers::custom::gear_simple_mask::GearSimpleMask;
 use crate::chunkers::ported::pci::Pci;
+use crate::hashes::buzhash::BuzHashBuilder;
+use crate::hashes::tables::sha256_u64_table;
+use crate::util::mask_builder::create_simple_mask;
 use crate::util::MB;
 
 mod benchmark;
 mod chunkers;
+mod hashes;
 mod util;
 
 fn main() -> std::io::Result<()> {
-    evaluate_full_files(
-        vec![
-            PathBuf::from("data/extracted/postgres-15.2-extracted"),
-            PathBuf::from("data/extracted/postgres-15.3-extracted"),
-        ],
-        Path::new("results"),
+    let chunkers: Vec<NamedChunker> = vec![
+        ("Buzhash64_256".to_string(), |sizes| Box::new(Buzhash64::new(sizes, 256))),
+        ("Buzhash64_256_generic".to_string(), |sizes| {
+            Box::new(ChunkerWithMask::new(sizes, BuzHashBuilder::new(sha256_u64_table(), 256), create_simple_mask, 0))
+        }),
+    ];
+    let input_dirs: Vec<PathBuf> = vec![
+        PathBuf::from("data/extracted/postgres-15.2-extracted"),
+        PathBuf::from("data/extracted/postgres-15.3-extracted"),
+    ];
+    evaluate(
+        vec![64 * KB],
+        |avg_size| vec![ChunkSizes::new(avg_size / 4, avg_size, 4 * avg_size)],
+        chunkers.clone(),
+        read_files_in_dir_sorted_by_name,
+        input_dirs.clone(),
+        Path::new("results/gen/buz"),
     )?;
-    evaluate_buzhash()?;
-    evaluate_fast_cdc()?;
-    evaluate_standard()?;
-    evaluate_standard_llvm()?;
-    evaluate_extra_cdc()?;
     Ok(())
 }
 

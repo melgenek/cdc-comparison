@@ -8,6 +8,8 @@ use ring::digest::{Context, SHA256};
 use walkdir::WalkDir;
 
 pub mod multi_file_dir;
+pub mod unsigned_integer;
+pub mod mask_builder;
 
 pub const KB: usize = 1024;
 pub const MB: usize = 1024 * 1024;

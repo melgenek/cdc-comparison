@@ -31,7 +31,7 @@ pub struct ChunkStream<'a, R: Read> {
 impl<'a, R: Read> ChunkStream<'a, R> {
     pub fn new(source: R, chunker: &'a Box<dyn Chunker>, chunk_sizes: ChunkSizes) -> Self {
         Self {
-            buffer: vec![0_u8; chunk_sizes.max_size() as usize],
+            buffer: vec![0_u8; chunk_sizes.max_size()],
             length: 0,
             source,
             eof: false,
@@ -43,7 +43,7 @@ impl<'a, R: Read> ChunkStream<'a, R> {
 
     /// Fill the buffer with data from the source
     fn fill_buffer(&mut self) -> std::io::Result<()> {
-        while !self.eof && self.length < self.chunk_sizes.max_size() as usize {
+        while !self.eof && self.length < self.chunk_sizes.max_size() {
             let bytes_read = self.source.read(&mut self.buffer[self.length..])?;
             if bytes_read == 0 {
                 self.eof = true;
@@ -71,7 +71,7 @@ impl<'a, R: Read> Iterator for ChunkStream<'a, R> {
         match self.fill_buffer() {
             Err(err) => Some(Err(err)),
             Ok(_) => {
-                let chunk_length = if self.length <= self.chunk_sizes.min_size() as usize {
+                let chunk_length = if self.length <= self.chunk_sizes.min_size() {
                     self.length
                 } else {
                     self.chunker.find_split_point(&self.buffer[..self.length], &self.chunk_sizes)
