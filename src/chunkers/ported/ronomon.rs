@@ -45,16 +45,23 @@
 //! >   from the strict mask to the eager mask earlier.
 //! > * Masks use 1 bit of chunk size normalization instead of 2 bits of chunk
 //! >   size normalization.
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::chunkers::chunker::Chunker;
+use crate::chunkers::chunker_with_normalization::{new_normalized_chunker_with_center, ChunkerWithMask};
+use crate::hashes::right_gearhash::RightGearHashBuilder;
+use crate::util::chunk_sizes::ChunkSizes;
 use crate::util::logarithm2;
+use crate::util::mask_builder::create_simple_mask;
+use crate::util::unsigned_integer::UnsignedInteger;
+use aes::cipher::{generic_array::GenericArray, KeyIvInit, StreamCipher};
+use byteorder::{BigEndian, ReadBytesExt};
+use std::io::Cursor;
 
 pub const MINIMUM_MIN: usize = 64;
 pub const AVERAGE_MIN: usize = 64;
 pub const AVERAGE_MAX: usize = 268435456;
 
+/// https://github.com/ronomon/deduplication/blob/master/binding.cc#L20
 #[rustfmt::skip]
-const TABLE: [u32; 256] = [
+const RONOMON_TABLE: [u32; 256] = [
     0x5c95c078, 0x22408989, 0x2d48a214, 0x12842087, 0x530f8afb, 0x474536b9, 0x2963b4f1, 0x44cb738b,
     0x4ea7403d, 0x4d606b6e, 0x074ec5d3, 0x3af39d18, 0x726003ca, 0x37a62a74, 0x51a2f58e, 0x7506358e,
     0x5d4ab128, 0x4d4ae17b, 0x41e85924, 0x470c36f7, 0x4741cbe1, 0x01bb7f30, 0x617c1de3, 0x2b0c3a1f,
@@ -89,77 +96,80 @@ const TABLE: [u32; 256] = [
     0x2eac53a6, 0x16139e09, 0x0afd0dbc, 0x2a4d4237, 0x56a368c7, 0x234325e4, 0x2dce9187, 0x32e8ea7e
 ];
 
-pub struct RonomonCdc {
-    mask_s: u32,
-    mask_l: u32,
+type Aes256Ctr64BE = ctr::Ctr64BE<aes::Aes256>;
+
+/// https://github.com/nlfiedler/fastcdc-rs/blob/0f165fc5fd76e4c9b267bc4fa3a4ec6fcb78fe60/examples/table32.rs
+fn ronomon64_table() -> [u64; 256] {
+    let max_value: u64 = 1u64 << 63;
+    let mut table = [0u8; 2048];
+    let key = GenericArray::from([0u8; 32]);
+    let nonce = GenericArray::from([0u8; 16]);
+    let mut cipher = Aes256Ctr64BE::new(&key, &nonce);
+    cipher.apply_keystream(&mut table);
+    let mut rdr = Cursor::new(&table[..]);
+    let mut result = [0u64; 256];
+    for i in 0..256 {
+        let mut num: u64 = rdr.read_u64::<BigEndian>().unwrap();
+        num %= max_value;
+        assert!(num < max_value);
+        result[i] = num;
+    }
+    result
 }
 
-///
-/// Returns two raised to the `bits` power, minus one. In other words, a bit
-/// mask with that many least-significant bits set to 1.
-///
-fn mask(bits: u32) -> u32 {
-    assert!(bits >= 1);
-    assert!(bits <= 31);
-    2u32.pow(bits) - 1
-}
+pub struct RonomonCdc;
 
 impl RonomonCdc {
-    pub fn new(chunk_sizes: ChunkSizes, normalization_level: u32) -> Self {
+    pub fn new_original(
+        chunk_sizes: ChunkSizes,
+        normalization_level: u32,
+    ) -> ChunkerWithMask<u32, RightGearHashBuilder<u32>, u32> {
+        Self::new(RONOMON_TABLE, chunk_sizes, normalization_level)
+    }
+
+    pub fn new_u64(
+        chunk_sizes: ChunkSizes,
+        normalization_level: u32,
+    ) -> ChunkerWithMask<u64, RightGearHashBuilder<u64>, u64> {
+        Self::new(ronomon64_table(), chunk_sizes, normalization_level)
+    }
+
+    pub fn new<T: UnsignedInteger>(
+        table: [T; 256],
+        chunk_sizes: ChunkSizes,
+        normalization_level: u32,
+    ) -> ChunkerWithMask<T, RightGearHashBuilder<T>, T> {
         assert!(chunk_sizes.min_size() >= MINIMUM_MIN);
         assert!(chunk_sizes.avg_size() >= AVERAGE_MIN && chunk_sizes.avg_size() <= AVERAGE_MAX);
         let bits = logarithm2(chunk_sizes.avg_size() as u32);
-        Self { mask_s: mask(bits + normalization_level), mask_l: mask(bits - normalization_level) }
+        assert!(bits - normalization_level >= 5);
+        assert!(bits + normalization_level <= 26);
+        new_normalized_chunker_with_center(
+            chunk_sizes,
+            RightGearHashBuilder::new(table),
+            Box::new(create_simple_mask),
+            normalization_level,
+            ronomon_center_finder,
+        )
     }
 }
 
-///
 /// Integer division that rounds up instead of down.
-///
 fn ceil_div(x: usize, y: usize) -> usize {
     (x + y - 1) / y
 }
 
-///
 /// Find the middle of the desired chunk size, or what the FastCDC paper refers
 /// to as the "normal size".
-///
-fn center_size(average: usize, minimum: usize, source_size: usize) -> usize {
-    let mut offset: usize = minimum + ceil_div(minimum, 2);
-    if offset > average {
-        offset = average;
+fn ronomon_center_finder(chunk_sizes: &ChunkSizes, buf_size: usize) -> usize {
+    let mut offset: usize = chunk_sizes.min_size() + ceil_div(chunk_sizes.min_size(), 2);
+    if offset > chunk_sizes.avg_size() {
+        offset = chunk_sizes.avg_size();
     }
-    let size: usize = average - offset;
-    if size > source_size {
-        source_size
+    let size: usize = chunk_sizes.avg_size() - offset;
+    if size > buf_size {
+        buf_size
     } else {
         size
-    }
-}
-
-impl Chunker for RonomonCdc {
-    fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
-        let buf_length = buf.len();
-        let center = center_size(chunk_sizes.avg_size(), chunk_sizes.min_size(), buf_length);
-        let mut index = chunk_sizes.min_size();
-
-        let mut hash: u32 = 0;
-        while index < center {
-            hash = (hash >> 1) + (TABLE[buf[index] as usize]);
-            if (hash & self.mask_s) == 0 {
-                return index;
-            }
-            index += 1;
-        }
-
-        while index < buf_length {
-            hash = (hash >> 1) + (TABLE[buf[index] as usize]);
-            if (hash & self.mask_l) == 0 {
-                return index;
-            }
-            index += 1;
-        }
-
-        index
     }
 }

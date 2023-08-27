@@ -25,123 +25,25 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::chunkers::chunker::Chunker;
-use crate::chunkers::ported::restic::polynomial::Pol;
-use crate::util::logarithm2;
+use crate::chunkers::chunker_with_normalization::{new_normalized_chunker, ChunkerWithMask};
+use crate::hashes::polynomial_hash::polynomial::Pol;
+use crate::hashes::polynomial_hash::PolynomialHashBuilder;
+use crate::util::chunk_sizes::ChunkSizes;
+use crate::util::mask_builder::create_simple_mask;
 
 const WINDOW_SIZE: usize = 64;
 
-struct Tables {
-    out: [Pol; 256],
-    mods: [Pol; 256],
-}
-
-impl Tables {
-    fn new(pol: Pol) -> Tables {
-        let mut out = [Pol::ZERO; 256];
-        let mut mods = [Pol::ZERO; 256];
-
-        // calculate table for sliding out bytes. The byte to slide out is used as
-        // the index for the table, the value contains the following:
-        // out_table[b] = Hash(b || 0 ||        ...        || 0)
-        //                          \ windowsize-1 zero bytes /
-        // To slide out byte b_0 for window size w with known hash
-        // H := H(b_0 || ... || b_w), it is sufficient to add out_table[b_0]:
-        //    H(b_0 || ... || b_w) + H(b_0 || 0 || ... || 0)
-        //  = H(b_0 + b_0 || b_1 + 0 || ... || b_w + 0)
-        //  = H(    0     || b_1 || ...     || b_w)
-        //
-        // Afterwards a new byte can be shifted in.
-        for b in 0..256 {
-            let mut h = Tables::append_byte(Pol::ZERO, b as u8, pol);
-            for _ in 0..(WINDOW_SIZE - 1) {
-                h = Tables::append_byte(h, 0, pol);
-            }
-            out[b] = h;
-        }
-
-        // calculate table for reduction mod Polynomial
-        let k = pol.deg();
-        for b in 0..256 {
-            // for b := 0; b < 256; b++ {
-            // mod_table[b] = A | B, where A = (b(x) * x^k mod pol) and  B = b(x) * x^k
-            //
-            // The 8 bits above deg(Polynomial) determine what happens next and so
-            // these bits are used as a lookup to this table. The value is split in
-            // two parts: Part A contains the result of the modulus operation, part
-            // B is used to cancel out the 8 top bits so that one XOR operation is
-            // enough to reduce modulo Polynomial
-            mods[b] = (Pol::from((b as u64) << k) % pol) | (Pol::from(b as u64) << k)
-        }
-        Tables { out, mods }
-    }
-
-    fn append_byte(digest: Pol, b: u8, pol: Pol) -> Pol {
-        let digest = digest << 8;
-        let digest = digest | Pol::from(b);
-        digest % pol
-    }
-}
-
-pub struct ResticCdc {
-    tables: Tables,
-    pol_shift: u64,
-    split_mask: u64,
-}
+pub struct ResticCdc;
 
 impl ResticCdc {
-    pub fn new(pol: Pol, chunk_sizes: ChunkSizes) -> Self {
+    pub fn new(pol: Pol, chunk_sizes: ChunkSizes) -> ChunkerWithMask<u64, PolynomialHashBuilder, u64> {
         assert!(chunk_sizes.avg_size() <= u32::MAX as usize);
-        let bits = logarithm2(chunk_sizes.avg_size() as u32);
-        let split_mask = (1 << bits) - 1;
-        let pol_shift = (pol.deg() - 8) as u64;
-        if pol_shift > 53 - 8 {
-            panic!("The polynomial must have a degree less than or equal 53")
-        }
-        let tables = Tables::new(pol);
-        ResticCdc { tables, pol_shift, split_mask }
-    }
-
-    fn update_digest(&self, digest: u64, b: u8) -> u64 {
-        let index = digest >> self.pol_shift;
-        let digest = digest << 8;
-        let digest = digest | (b as u64);
-        let digest = digest ^ self.tables.mods[index as usize].value();
-        digest
-    }
-}
-
-impl Chunker for ResticCdc {
-    fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
-        let mut window: [u8; WINDOW_SIZE] = [0; WINDOW_SIZE];
-        let mut oldest_idx: usize = 0;
-
-        let mut slide = |digest: u64, new_byte: u8| -> u64 {
-            let old_byte = window[oldest_idx];
-            window[oldest_idx] = new_byte;
-            oldest_idx = (oldest_idx + 1) % WINDOW_SIZE;
-            let digest = digest ^ self.tables.out[old_byte as usize].value();
-            let digest = self.update_digest(digest, new_byte);
-            digest
-        };
-
-        let mut digest = slide(0, 1);
-        let mut i = chunk_sizes.min_size() - WINDOW_SIZE;
-
-        while i < chunk_sizes.min_size() {
-            digest = slide(digest, buf[i as usize]);
-            i += 1;
-        }
-
-        while i < buf.len() {
-            if (digest & self.split_mask) == 0 {
-                break;
-            }
-            digest = slide(digest, buf[i as usize]);
-            i += 1;
-        }
-        i
+        new_normalized_chunker(
+            chunk_sizes,
+            PolynomialHashBuilder::new(pol, WINDOW_SIZE),
+            Box::new(create_simple_mask),
+            0,
+        )
     }
 }
 
@@ -150,11 +52,11 @@ mod tests {
     use std::fs::File;
     use std::io::Read;
 
-    use crate::chunk_stream::ChunkStream;
-    use crate::chunkers::chunk_sizes::ChunkSizes;
-    use crate::chunkers::chunker::Chunker;
-    use crate::restic::chunker::ResticCdc;
-    use crate::restic::polynomial::Pol;
+    use crate::chunkers::ported::restic::ResticCdc;
+    use crate::chunkers::Chunker;
+    use crate::hashes::polynomial_hash::polynomial::Pol;
+    use crate::util::chunk_sizes::ChunkSizes;
+    use crate::util::chunk_stream::ChunkStream;
     use crate::util::sha256;
     use crate::{KB, MB};
 

@@ -6,8 +6,8 @@
 //!  Incremental Synchronization," in IEEE Access, vol. 8, pp. 5316-5330, 2020,
 //!  doi: 10.1109/ACCESS.2019.2963625.
 //!  PDF: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8949536
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::chunkers::chunker::Chunker;
+use crate::chunkers::Chunker;
+use crate::util::chunk_sizes::ChunkSizes;
 use probability::distribution::{Binomial, Inverse};
 
 /// This function produces a threshold on the number of bits for binomial distribution of chunk sizes.

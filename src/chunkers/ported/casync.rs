@@ -14,11 +14,13 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 // Lesser General Public License for more details.
 
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::chunkers::chunker::Chunker;
+use crate::chunkers::chunker_with_normalization::{new_normalized_chunker_with_predicate, ChunkerWithMask};
+use crate::hashes::buzhash::BuzHashBuilder;
+use crate::util::chunk_sizes::ChunkSizes;
+use crate::util::mask_builder::MaskBuilder;
 
 #[rustfmt::skip]
-const BUZHASH_TABLE: [u32; 256] = [
+const CASYNC_TABLE: [u32; 256] = [
     0x458be752, 0xc10748cc, 0xfbbcdbb8, 0x6ded5b68,
     0xb10a82b5, 0x20d75648, 0xdfc5665f, 0xa8428801,
     0x7ebf5191, 0x841135c7, 0x65cc53b3, 0x280a597c,
@@ -87,51 +89,23 @@ const BUZHASH_TABLE: [u32; 256] = [
 
 const WINDOW_SIZE: usize = 48;
 
-fn rol32(x: u32, i: usize) -> u32 {
-    let i = i % 32;
-    if i == 0 {
-        x
-    } else {
-        (x << i) | (x >> (32 - i))
-    }
-}
-
-pub struct Casync {
-    discriminator: u64,
-}
+pub struct Casync;
 
 impl Casync {
-    pub fn new(chunk_sizes: ChunkSizes) -> Self {
-        Self {
-            discriminator: (chunk_sizes.avg_size() as f64
-                / (-1.42888852e-7 * chunk_sizes.avg_size() as f64 + 1.33237515)) as u64,
-        }
+    pub fn new(chunk_sizes: ChunkSizes) -> ChunkerWithMask<u32, BuzHashBuilder<u32>, u64> {
+        let mask_builder: MaskBuilder<u64> = Box::new(move |u32| {
+            (chunk_sizes.avg_size() as f64 / (-1.42888852e-7 * chunk_sizes.avg_size() as f64 + 1.33237515)) as u64
+        });
+        new_normalized_chunker_with_predicate(
+            chunk_sizes,
+            BuzHashBuilder::new(CASYNC_TABLE, WINDOW_SIZE),
+            mask_builder,
+            0,
+            casync_predicate,
+        )
     }
 }
 
-impl Chunker for Casync {
-    fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
-        let shall_break = |hash: u32| -> bool { (hash as u64 % self.discriminator) == (self.discriminator - 1) };
-
-        let mut hash = 0;
-        let mut i = chunk_sizes.min_size() - WINDOW_SIZE;
-        while i < chunk_sizes.min_size() {
-            let new_byte = buf[i];
-            hash = rol32(hash, 1) ^ BUZHASH_TABLE[new_byte as usize];
-            i += 1;
-        }
-
-        while i < buf.len() {
-            if shall_break(hash) {
-                break;
-            }
-            let new_byte = buf[i];
-            let old_byte = buf[i - WINDOW_SIZE];
-            hash = rol32(hash, 1)
-                ^ rol32(BUZHASH_TABLE[old_byte as usize], WINDOW_SIZE)
-                ^ BUZHASH_TABLE[new_byte as usize];
-            i += 1;
-        }
-        i
-    }
+fn casync_predicate(digest: u32, discriminator: u64) -> bool {
+    (digest as u64 % discriminator) == (discriminator - 1)
 }

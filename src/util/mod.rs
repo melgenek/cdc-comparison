@@ -7,9 +7,11 @@ use data_encoding::HEXLOWER;
 use ring::digest::{Context, SHA256};
 use walkdir::WalkDir;
 
+pub mod chunk_sizes;
+pub mod chunk_stream;
+pub mod mask_builder;
 pub mod multi_file_dir;
 pub mod unsigned_integer;
-pub mod mask_builder;
 
 pub const KB: usize = 1024;
 pub const MB: usize = 1024 * 1024;

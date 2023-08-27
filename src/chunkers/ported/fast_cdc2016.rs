@@ -29,13 +29,12 @@
 //! The algorithm incorporates a simplified hash judgement using the fast Gear
 //! hash, sub-minimum chunk cut-point skipping, and normalized chunking to
 //! produce chunks of a more consistent length.
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::chunkers::chunker::Chunker;
-use crate::util::logarithm2;
+use crate::chunkers::chunker_with_normalization::{new_normalized_chunker, ChunkerWithMask};
+use crate::hashes::gearhash::GearHashBuilder;
+use crate::util::chunk_sizes::ChunkSizes;
 
-pub const MINIMUM_MIN: usize = 64;
-pub const AVERAGE_MIN: usize = 64;
-pub const AVERAGE_MAX: usize = 16777216;
+pub const FAST_CDC_AVERAGE_MIN: usize = 64;
+pub const FAST_CDC_AVERAGE_MAX: usize = 16777216;
 
 // Masks for each of the desired number of bits, where 0 through 5 are unused.
 // The values for sizes 64 bytes through 128 kilo-bytes comes from the C
@@ -75,10 +74,8 @@ const MASKS: [u64; 26] = [
 // GEAR contains seemingly random numbers which are created by computing the
 // MD5 digest of values from 0 to 255, using only the high 8 bytes of the 16
 // byte digest. This is the "gear hash" referred to the in FastCDC paper.
-//
-// The program to produce this table is named table64.rs in examples.
 #[rustfmt::skip]
-const GEAR: [u64; 256] = [
+pub const FAST_CDC_2016_TABLE: [u64; 256] = [
     0x3b5d3c7d207e37dc, 0x784d68ba91123086, 0xcd52880f882e7298, 0xeacf8e4e19fdcca7,
     0xc31f385dfbd1632b, 0x1d5f27001e25abe6, 0x83130bde3c9ad991, 0xc4b225676e9b7649,
     0xaa329b29e08eb499, 0xb67fcbd21e577d58, 0x0027baaada2acf6b, 0xe3ef2d5ac73c2226,
@@ -145,56 +142,22 @@ const GEAR: [u64; 256] = [
     0x8e3e4221d3614413, 0xef14d0d86bf1a22c, 0xe1d830d3f16c5ddb, 0xaabd2b2a451504e1
 ];
 
-pub struct FastCdc2016 {
-    mask_s: u64,
-    mask_l: u64,
+pub struct FastCdc2016;
+
+pub fn create_fastcdc_mask(bits_count: u32) -> u64 {
+    assert!(bits_count >= 5);
+    assert!(bits_count <= 26);
+    MASKS[bits_count as usize]
 }
 
 impl FastCdc2016 {
-    pub fn new(chunk_sizes: ChunkSizes, normalization_level: u32) -> Self {
-        assert!(chunk_sizes.min_size() >= MINIMUM_MIN);
-        assert!(chunk_sizes.avg_size() >= AVERAGE_MIN && chunk_sizes.avg_size() <= AVERAGE_MAX);
-        let bits = logarithm2(chunk_sizes.avg_size() as u32);
-        assert!(bits - normalization_level >= 5);
-        assert!(bits + normalization_level <= 26);
-        Self {
-            mask_s: MASKS[(bits + normalization_level) as usize],
-            mask_l: MASKS[(bits - normalization_level) as usize],
-        }
-    }
-}
-
-impl Chunker for FastCdc2016 {
-    fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
-        let buf_length = buf.len();
-        let center = if buf_length < chunk_sizes.avg_size() { buf_length } else { chunk_sizes.avg_size() };
-        let mut index = chunk_sizes.min_size();
-
-        // Paraphrasing from the paper: Use the mask with more 1 bits for the
-        // hash judgment when the current chunking position is smaller than the
-        // desired size, which makes it harder to generate smaller chunks.
-        let mut hash: u64 = 0;
-        while index < center {
-            hash = (hash << 1).wrapping_add(GEAR[buf[index] as usize]);
-            if (hash & self.mask_s) == 0 {
-                return index;
-            }
-            index += 1;
-        }
-
-        // Again, paraphrasing: use the mask with fewer 1 bits for the hash
-        // judgment when the current chunking position is larger than the
-        // desired size, which makes it easier to generate larger chunks.
-        while index < buf_length {
-            hash = (hash << 1).wrapping_add(GEAR[buf[index] as usize]);
-            if (hash & self.mask_l) == 0 {
-                return index;
-            }
-            index += 1;
-        }
-
-        // If all else fails, return the largest chunk. This will happen with
-        // pathological data, such as all zeroes.
-        index
+    pub fn new(chunk_sizes: ChunkSizes, normalization_level: u32) -> ChunkerWithMask<u64, GearHashBuilder<u64>, u64> {
+        assert!(chunk_sizes.avg_size() >= FAST_CDC_AVERAGE_MIN && chunk_sizes.avg_size() <= FAST_CDC_AVERAGE_MAX);
+        new_normalized_chunker(
+            chunk_sizes,
+            GearHashBuilder::new(FAST_CDC_2016_TABLE),
+            Box::new(create_fastcdc_mask),
+            normalization_level,
+        )
     }
 }

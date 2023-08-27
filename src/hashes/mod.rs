@@ -1,10 +1,14 @@
 pub mod buzhash;
+pub mod gearhash;
+pub mod polynomial_hash;
+pub mod right_gearhash;
 pub mod tables;
 
 pub trait RollingHashBuilder<T> {
     type RH<'a>: RollingHash<'a, T>
     where
-        Self: 'a;
+        Self: 'a,
+        T: 'a;
 
     fn prepare_bytes_count(&self) -> usize;
     fn new_hash(&self, buffer: &[u8]) -> Self::RH<'_>;

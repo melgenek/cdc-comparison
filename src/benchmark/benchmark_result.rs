@@ -1,5 +1,5 @@
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::chunkers::chunk_stream::Chunk;
+use crate::util::chunk_sizes::ChunkSizes;
+use crate::util::chunk_stream::Chunk;
 use crate::util::sha256;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};

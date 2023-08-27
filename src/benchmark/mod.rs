@@ -8,9 +8,9 @@ use rayon::prelude::*;
 use crate::benchmark::benchmark_result::AlgorithmResult;
 use crate::benchmark::jmh_json_reporter::write_results_jmh_json;
 use crate::benchmark::markdown_reporter::write_results_markdown;
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::chunkers::chunk_stream::ChunkStream;
-use crate::chunkers::chunker::Chunker;
+use crate::chunkers::Chunker;
+use crate::util::chunk_sizes::ChunkSizes;
+use crate::util::chunk_stream::ChunkStream;
 use crate::util::multi_file_dir::MultiFileRead;
 use crate::util::{read_files_in_dir_sorted_by_name, sha256_file, MB};
 

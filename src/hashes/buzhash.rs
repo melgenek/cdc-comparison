@@ -37,19 +37,15 @@ impl<'a, T: UnsignedInteger> BuzHash<'a, T> {
 
         for new_byte in buffer {
             let _ = hash.replace_and_return_oldest_window_byte(*new_byte);
-            hash.digest = Self::rol(hash.digest, 1) ^ hash.builder.table[*new_byte as usize];
+            hash.digest = Self::barrel_shift(hash.digest, 1) ^ hash.builder.table[*new_byte as usize];
         }
 
         hash
     }
 
-    fn rol(x: T, i: usize) -> T {
-        let i = i % T::bits_count();
-        if i == 0 {
-            x
-        } else {
-            (x << i) | (x >> (T::bits_count() - i))
-        }
+    fn barrel_shift(x: T, i: usize) -> T {
+        let i = i & T::signed_bits_count();
+        (x << i) | (x >> ((T::bits_count() - i) & T::signed_bits_count()))
     }
 
     fn replace_and_return_oldest_window_byte(&mut self, new_byte: u8) -> u8 {
@@ -63,8 +59,8 @@ impl<'a, T: UnsignedInteger> BuzHash<'a, T> {
 impl<'a, T: UnsignedInteger> RollingHash<'a, T> for BuzHash<'a, T> {
     fn roll(&mut self, new_byte: u8) {
         let old_byte = self.replace_and_return_oldest_window_byte(new_byte);
-        self.digest = Self::rol(self.digest, 1)
-            ^ Self::rol(self.builder.table[old_byte as usize], self.builder.window_size)
+        self.digest = Self::barrel_shift(self.digest, 1)
+            ^ Self::barrel_shift(self.builder.table[old_byte as usize], self.builder.window_size)
             ^ self.builder.table[new_byte as usize];
     }
 

@@ -36,8 +36,9 @@
 //! [1] https://!www.usenix.org/system/files/conference/atc16/atc16-paper-xia.pdf.
 //! [2] https://!github.com/dbaarda/rollsum-chunking/blob/master/RESULTS.rst
 //! [3] https://!www.usenix.org/system/files/conference/atc12/atc12-final293.pdf
-use crate::chunkers::chunk_sizes::ChunkSizes;
-use crate::chunkers::chunker::Chunker;
+
+use crate::chunkers::Chunker;
+use crate::util::chunk_sizes::ChunkSizes;
 
 #[rustfmt::skip]
 const GEAR: [u64; 256] = [

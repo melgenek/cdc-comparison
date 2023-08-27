@@ -5,7 +5,7 @@ use std::path::Path;
 use serde::Serialize;
 
 use crate::benchmark::benchmark_result::AlgorithmResult;
-use crate::chunkers::chunk_sizes::ChunkSizes;
+use crate::util::chunk_sizes::ChunkSizes;
 use crate::util::{limit_precision, size_to_str, KB};
 
 #[derive(Serialize)]

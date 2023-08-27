@@ -1,4 +1,7 @@
+use std::fmt::Display;
 use std::ops::{BitAnd, BitOr, BitXor, Shl, Shr, Sub};
+
+use num_traits::WrappingAdd;
 
 pub trait UnsignedInteger:
     BitXor<Output = Self>
@@ -8,12 +11,18 @@ pub trait UnsignedInteger:
     + Sub<Output = Self>
     + Shl<usize, Output = Self>
     + Shr<usize, Output = Self>
+    + WrappingAdd
+    + Display
     + Sized
     + Copy
+    + 'static
 {
     fn zero() -> Self;
     fn one() -> Self;
     fn bits_count() -> usize;
+    fn signed_bits_count() -> usize {
+        Self::bits_count() - 1
+    }
 }
 
 impl UnsignedInteger for u32 {
