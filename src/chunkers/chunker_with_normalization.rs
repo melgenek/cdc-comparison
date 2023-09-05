@@ -67,17 +67,16 @@ pub fn new_custom_normalized_chunker<T: UnsignedInteger, H: RollingHashBuilder<T
     center_finder: CenterFinder,
     predicate: Predicate<T, MT>,
 ) -> ChunkerWithMask<T, H, MT> {
-    let bits = logarithm2(chunk_sizes.avg_size() as u32);
     ChunkerWithMask {
         hash_builder,
         center_finder,
         predicate,
-        mask_low_probability: mask_builder(bits + normalization_level),
-        mask_high_probability: mask_builder(bits - normalization_level),
+        mask_low_probability: mask_builder(chunk_sizes.avg_size() << normalization_level),
+        mask_high_probability: mask_builder(chunk_sizes.avg_size() >> normalization_level),
     }
 }
 
-fn simple_center_finder(chunk_sizes: &ChunkSizes, buf_size: usize) -> usize {
+pub fn simple_center_finder(chunk_sizes: &ChunkSizes, buf_size: usize) -> usize {
     if buf_size < chunk_sizes.avg_size() {
         buf_size
     } else {

@@ -6,9 +6,14 @@
 //!  Incremental Synchronization," in IEEE Access, vol. 8, pp. 5316-5330, 2020,
 //!  doi: 10.1109/ACCESS.2019.2963625.
 //!  PDF: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8949536
-use crate::chunkers::Chunker;
-use crate::util::chunk_sizes::ChunkSizes;
 use probability::distribution::{Binomial, Inverse};
+
+use crate::chunkers::chunker_with_normalization::{
+    ChunkerWithMask, new_custom_normalized_chunker, simple_center_finder,
+};
+use crate::hashes::{RollingHash, RollingHashBuilder};
+use crate::util::chunk_sizes::ChunkSizes;
+use crate::util::mask_builder::MaskBuilder;
 
 /// This function produces a threshold on the number of bits for binomial distribution of chunk sizes.
 /// The threshold is hardcoded in the paper.
@@ -27,52 +32,83 @@ pub fn threshold(chunk_size: usize, window_size: usize) -> u32 {
     (d.inverse(1.0 - desired_probability) + 1) as u32
 }
 
-pub struct Pci {
-    window_size: usize,
-    threshold_hard: u32,
-    threshold_simple: u32,
-}
+pub struct Pci;
 
 impl Pci {
-    pub fn new(chunk_sizes: ChunkSizes, window_size: usize) -> Self {
-        Self::new_with_nc(chunk_sizes, window_size, 0)
-    }
-    pub fn new_with_nc(chunk_sizes: ChunkSizes, window_size: usize, nc: u32) -> Self {
-        Self {
-            window_size,
-            threshold_hard: threshold(chunk_sizes.avg_size() * 2usize.pow(nc), window_size.clone()),
-            threshold_simple: threshold(chunk_sizes.avg_size() / 2usize.pow(nc), window_size.clone()),
-        }
+    pub fn new(
+        chunk_sizes: ChunkSizes,
+        window_size: usize,
+        normalization_level: u32,
+    ) -> ChunkerWithMask<u32, PciHashBuilder, u32> {
+        let mask_builder: MaskBuilder<u32> = Box::new(move |target_size| threshold(target_size, window_size));
+        new_custom_normalized_chunker(
+            chunk_sizes,
+            PciHashBuilder::new(window_size),
+            mask_builder,
+            normalization_level,
+            simple_center_finder,
+            |ones_count, threshold| ones_count >= threshold,
+        )
     }
 }
 
-impl Chunker for Pci {
-    fn find_split_point(&self, buf: &[u8], chunk_sizes: &ChunkSizes) -> usize {
-        let mut ones_count = 0;
-        let mut i = chunk_sizes.min_size() - self.window_size;
-        while i < chunk_sizes.min_size() {
-            ones_count += buf[i].count_ones();
-            i += 1;
+pub struct PciHashBuilder {
+    window_size: usize,
+}
+
+impl PciHashBuilder {
+    pub fn new(window_size: usize) -> Self {
+        Self { window_size }
+    }
+}
+
+impl RollingHashBuilder<u32> for PciHashBuilder {
+    type RH<'a> = PciHash<'a>;
+
+    fn prepare_bytes_count(&self) -> usize {
+        self.window_size
+    }
+
+    fn new_hash(&self, buffer: &[u8]) -> Self::RH<'_> {
+        PciHash::new(self, buffer)
+    }
+}
+
+pub struct PciHash<'a> {
+    builder: &'a PciHashBuilder,
+    ones_count: u32,
+    window: Vec<u8>,
+    window_idx: usize,
+}
+
+impl<'a> PciHash<'a> {
+    fn new(builder: &'a PciHashBuilder, buffer: &[u8]) -> Self {
+        let mut hash = Self { builder, ones_count: 0, window: vec![0; builder.window_size], window_idx: 0 };
+
+        for new_byte in buffer {
+            let _ = hash.replace_and_return_oldest_window_byte(*new_byte);
+            hash.ones_count += new_byte.count_ones();
         }
 
-        let buf_length = buf.len();
-        let center = if buf_length < chunk_sizes.avg_size() { buf_length } else { chunk_sizes.avg_size() };
-        while i < center {
-            if ones_count >= self.threshold_hard {
-                break;
-            }
-            ones_count -= buf[i - self.window_size].count_ones();
-            ones_count += buf[i].count_ones();
-            i += 1;
-        }
-        while i < buf_length {
-            if ones_count >= self.threshold_simple {
-                break;
-            }
-            ones_count -= buf[i - self.window_size].count_ones();
-            ones_count += buf[i].count_ones();
-            i += 1;
-        }
-        i
+        hash
+    }
+
+    fn replace_and_return_oldest_window_byte(&mut self, new_byte: u8) -> u8 {
+        let old_byte = self.window[self.window_idx];
+        self.window[self.window_idx] = new_byte;
+        self.window_idx = (self.window_idx + 1) % self.builder.window_size;
+        old_byte
+    }
+}
+
+impl<'a> RollingHash<'a, u32> for PciHash<'a> {
+    fn roll(&mut self, new_byte: u8) {
+        let old_byte = self.replace_and_return_oldest_window_byte(new_byte);
+        self.ones_count -= old_byte.count_ones();
+        self.ones_count += new_byte.count_ones();
+    }
+
+    fn digest(&self) -> u32 {
+        self.ones_count
     }
 }

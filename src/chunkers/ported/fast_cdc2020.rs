@@ -117,9 +117,8 @@ pub struct FastCdc2020 {
 impl FastCdc2020 {
     pub fn new(chunk_sizes: ChunkSizes, normalization_level: u32) -> Self {
         assert!(chunk_sizes.avg_size() >= FAST_CDC_AVERAGE_MIN && chunk_sizes.avg_size() <= FAST_CDC_AVERAGE_MAX);
-        let bits = logarithm2(chunk_sizes.avg_size() as u32);
-        let mask_s = create_fastcdc_mask(bits + normalization_level);
-        let mask_l = create_fastcdc_mask(bits - normalization_level);
+        let mask_s = create_fastcdc_mask(chunk_sizes.avg_size() << normalization_level);
+        let mask_l = create_fastcdc_mask(chunk_sizes.avg_size() >> normalization_level);
         Self { mask_s, mask_l, mask_s_ls: mask_s << 1, mask_l_ls: mask_l << 1 }
     }
 }

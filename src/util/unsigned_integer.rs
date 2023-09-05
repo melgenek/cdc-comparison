@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Binary, Display};
 use std::ops::{BitAnd, BitOr, BitXor, Shl, Shr, Sub};
 
 use num_traits::WrappingAdd;
@@ -12,6 +12,7 @@ pub trait UnsignedInteger:
     + Shl<usize, Output = Self>
     + Shr<usize, Output = Self>
     + WrappingAdd
+    + Binary
     + Display
     + Sized
     + Copy

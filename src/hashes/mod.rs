@@ -3,6 +3,7 @@ pub mod gearhash;
 pub mod polynomial_hash;
 pub mod right_gearhash;
 pub mod tables;
+pub mod adler32;
 
 pub trait RollingHashBuilder<T> {
     type RH<'a>: RollingHash<'a, T>

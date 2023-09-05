@@ -32,6 +32,7 @@
 use crate::chunkers::chunker_with_normalization::{new_normalized_chunker, ChunkerWithMask};
 use crate::hashes::gearhash::GearHashBuilder;
 use crate::util::chunk_sizes::ChunkSizes;
+use crate::util::logarithm2;
 
 pub const FAST_CDC_AVERAGE_MIN: usize = 64;
 pub const FAST_CDC_AVERAGE_MAX: usize = 16777216;
@@ -144,7 +145,8 @@ pub const FAST_CDC_2016_TABLE: [u64; 256] = [
 
 pub struct FastCdc2016;
 
-pub fn create_fastcdc_mask(bits_count: u32) -> u64 {
+pub fn create_fastcdc_mask(target_size: usize) -> u64 {
+    let bits_count = logarithm2(target_size as u32);
     assert!(bits_count >= 5);
     assert!(bits_count <= 26);
     MASKS[bits_count as usize]
