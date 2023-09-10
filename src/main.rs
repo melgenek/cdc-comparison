@@ -15,7 +15,7 @@ use crate::benchmark::{avg_to_standard_sizes, evaluate, evaluate_full_files};
 use crate::chunkers::ported::borg::Borg;
 use crate::chunkers::ported::pci::Pci;
 use crate::chunkers::ported::restic::ResticCdc;
-use crate::chunkers::{new_adler_u32, new_buz, new_buz_spread_mask, new_gear_u128};
+use crate::chunkers::{new_adler_u32, new_buz, new_buz_spread_mask, new_gear_u128, new_polynomial};
 use crate::hashes::polynomial_hash::polynomial::Pol;
 use crate::hashes::tables::{sha256_u128_table, sha256_u32_table, sha256_u64_table};
 use crate::util::MB;
@@ -74,6 +74,8 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         // Buzhash 32
         ("Buzhash32 31".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 31, 0))),
         ("Buzhash32 31 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 31, 1))),
+        ("Buzhash32 48".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 48, 0))),
+        ("Buzhash32 48 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 48, 1))),
         ("Buzhash32 32".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 32, 0))),
         ("Buzhash32 32 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 32, 1))),
         ("Buzhash32 63".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 63, 0))),
@@ -102,6 +104,8 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Buzhash64 31 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 31, 1))),
         ("Buzhash64 32".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 32, 0))),
         ("Buzhash64 32 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 32, 1))),
+        ("Buzhash64 48".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 48, 0))),
+        ("Buzhash64 48 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 48, 1))),
         ("Buzhash64 63".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 63, 0))),
         ("Buzhash64 63 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 63, 1))),
         ("Buzhash64 64".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 64, 0))),
@@ -128,6 +132,8 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Buzhash128 31 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 31, 1))),
         ("Buzhash128 32".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 32, 0))),
         ("Buzhash128 32 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 32, 1))),
+        ("Buzhash128 48".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 48, 0))),
+        ("Buzhash128 48 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 48, 1))),
         ("Buzhash128 63".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 63, 0))),
         ("Buzhash128 63 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 63, 1))),
         ("Buzhash128 64".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 64, 0))),
@@ -166,6 +172,35 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Adler32 1024 nc1".to_string(), |sizes| Box::new(new_adler_u32(sizes, 64, 1))),
         ("Adler32 4096 nc0".to_string(), |sizes| Box::new(new_adler_u32(sizes, 64, 0))),
         ("Adler32 4096 nc1".to_string(), |sizes| Box::new(new_adler_u32(sizes, 64, 1))),
+        // Polynomial
+        ("Polynomial 31".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 31, 0))),
+        ("Polynomial 31 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 31, 1))),
+        ("Polynomial 32".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 32, 0))),
+        ("Polynomial 32 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 32, 1))),
+        ("Polynomial 48".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 48, 0))),
+        ("Polynomial 48 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 48, 1))),
+        ("Polynomial 63".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 63, 0))),
+        ("Polynomial 63 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 63, 1))),
+        ("Polynomial 64".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 64, 0))),
+        ("Polynomial 64 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 64, 1))),
+        ("Polynomial 255".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 255, 0))),
+        ("Polynomial 255 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 255, 1))),
+        ("Polynomial 255 nc2".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 255, 2))),
+        ("Polynomial 256".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 256, 0))),
+        ("Polynomial 256 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 256, 1))),
+        ("Polynomial 256 nc2".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 256, 2))),
+        ("Polynomial 511".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 511, 0))),
+        ("Polynomial 511 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 511, 1))),
+        ("Polynomial 511 nc2".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 511, 2))),
+        ("Polynomial 512".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 512, 0))),
+        ("Polynomial 512 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 512, 1))),
+        ("Polynomial 512 nc2".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 512, 2))),
+        ("Polynomial 4095".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 4095, 0))),
+        ("Polynomial 4095 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 4095, 1))),
+        ("Polynomial 4095 nc2".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 4095, 2))),
+        ("Polynomial 4096".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 4096, 0))),
+        ("Polynomial 4096 nc1".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 4096, 1))),
+        ("Polynomial 4096 nc2".to_string(), |sizes| Box::new(new_polynomial(sizes, Pol::generate_random(), 4096, 2))),
     ];
 
     let input_dirs: Vec<PathBuf> = vec![

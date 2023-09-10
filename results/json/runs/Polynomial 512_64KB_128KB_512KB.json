@@ -1,0 +1,1 @@
+{"name":"Polynomial 512","chunkSizes":"64KB/128KB/512KB","dedupRatio":"3.236%","durationSeconds":"22.2","resultChunkSizes":"157.28KB±105.44KB","resultChunkCount":4912,"minChunkSize":"2.79KB","maxChunkSize":"512.00KB","intervalSizes":"9.37MB±20.95MB","intervalCount":74,"minIntervalSize":"2.79KB","maxIntervalSize":"121.88MB"}
