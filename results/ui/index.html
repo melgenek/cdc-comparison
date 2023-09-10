@@ -33,7 +33,12 @@
             perPageSelect: [20, 50, 100],
             perPage: 20,
             searchable: true,
-            columns: [],
+            columns: [
+                {
+                    select: 2,
+                    sort: "desc"
+                }
+            ],
             data: {
                 headings: [
                     "Name",
