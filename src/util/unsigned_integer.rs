@@ -53,3 +53,17 @@ impl UnsignedInteger for u64 {
         64
     }
 }
+
+impl UnsignedInteger for u128 {
+    fn zero() -> u128 {
+        0
+    }
+
+    fn one() -> Self {
+        1
+    }
+
+    fn bits_count() -> usize {
+        64
+    }
+}

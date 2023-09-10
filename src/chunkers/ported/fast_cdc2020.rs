@@ -35,7 +35,6 @@ use crate::chunkers::ported::fast_cdc2016::{
 };
 use crate::chunkers::Chunker;
 use crate::util::chunk_sizes::ChunkSizes;
-use crate::util::logarithm2;
 
 // GEAR table in which all values have been shifted left 1 bit, as per the
 // FastCDC 2020 paper, section 3.7.

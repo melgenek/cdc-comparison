@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use data_encoding::HEXLOWER;
 use ring::digest::{Context, SHA256};
@@ -19,12 +18,6 @@ pub const MB: usize = 1024 * 1024;
 pub fn read_files_in_dir_sorted_by_name<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
     let mut files = read_files_in_dir_sorted(dir);
     files.sort_by_key(|(path, _)| path.clone());
-    files.into_iter().map(|(path, _)| path).collect()
-}
-
-pub fn read_files_in_dir_sorted_by_size_desc<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
-    let mut files = read_files_in_dir_sorted(dir);
-    files.sort_by_key(|(_, size)| -(*size as i64));
     files.into_iter().map(|(path, _)| path).collect()
 }
 
@@ -75,12 +68,8 @@ pub fn size_to_str(value: usize) -> String {
 
 pub fn size_to_str_f64(value: f64) -> String {
     if value < MB as f64 {
-        format!("{:.2}KB", value as f64 / KB as f64)
+        format!("{:.2}KB", value / KB as f64)
     } else {
-        format!("{:.2}MB", value as f64 / MB as f64)
+        format!("{:.2}MB", value / MB as f64)
     }
-}
-
-pub fn limit_precision(v: f64) -> f64 {
-    f64::from_str(&format!("{:.2}", v)).unwrap()
 }

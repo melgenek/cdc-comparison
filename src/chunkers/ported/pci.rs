@@ -9,7 +9,7 @@
 use probability::distribution::{Binomial, Inverse};
 
 use crate::chunkers::chunker_with_normalization::{
-    ChunkerWithMask, new_custom_normalized_chunker, simple_center_finder,
+    new_custom_normalized_chunker, simple_center_finder, ChunkerWithMask,
 };
 use crate::hashes::{RollingHash, RollingHashBuilder};
 use crate::util::chunk_sizes::ChunkSizes;

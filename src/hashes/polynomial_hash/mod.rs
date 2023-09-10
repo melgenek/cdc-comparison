@@ -2,7 +2,6 @@ pub mod polynomial;
 
 use crate::hashes::polynomial_hash::polynomial::Pol;
 use crate::hashes::{RollingHash, RollingHashBuilder};
-use crate::util::unsigned_integer::UnsignedInteger;
 
 struct Tables {
     out: [Pol; 256],

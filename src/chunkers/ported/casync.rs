@@ -93,7 +93,7 @@ pub struct Casync;
 
 impl Casync {
     pub fn new(chunk_sizes: ChunkSizes) -> ChunkerWithMask<u32, BuzHashBuilder<u32>, u64> {
-        let mask_builder: MaskBuilder<u64> = Box::new(move |target_size| {
+        let mask_builder: MaskBuilder<u64> = Box::new(move |_target_size| {
             (chunk_sizes.avg_size() as f64 / (-1.42888852e-7 * chunk_sizes.avg_size() as f64 + 1.33237515)) as u64
         });
         new_normalized_chunker_with_predicate(
