@@ -5,3 +5,6 @@ pub mod google_stadia_cdc;
 pub mod pci;
 pub mod restic;
 pub mod ronomon;
+pub mod borg;
+
+

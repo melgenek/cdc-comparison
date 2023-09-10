@@ -12,10 +12,14 @@ use chunkers::ported::ronomon::RonomonCdc;
 use util::{read_files_in_dir_sorted_by_name, read_files_in_dir_sorted_by_size_desc, KB};
 
 use crate::benchmark::{avg_to_standard_sizes, evaluate};
-use crate::chunkers::ported::pci::Pci;
+use crate::chunkers::chunker_with_normalization::new_normalized_chunker;
+use crate::chunkers::ported::borg::Borg;
 use crate::chunkers::ported::restic::ResticCdc;
+use crate::hashes::buzhash::BuzHashBuilder;
 use crate::hashes::polynomial_hash::polynomial::Pol;
+use crate::hashes::tables::sha256_u32_table;
 use crate::util::chunk_sizes::ChunkSizes;
+use crate::util::mask_builder::create_simple_mask;
 use crate::util::MB;
 
 mod benchmark;
@@ -24,7 +28,17 @@ mod hashes;
 mod util;
 
 fn main() -> std::io::Result<()> {
-    let chunkers: Vec<NamedChunker> = vec![("Pci_512_gen".to_string(), |sizes| Box::new(Pci::new(sizes, 512, 1)))];
+    let chunkers: Vec<NamedChunker> = vec![
+        ("Buz".to_string(), |sizes| {
+            Box::new(new_normalized_chunker(
+                sizes,
+                BuzHashBuilder::new(sha256_u32_table(), 4095),
+                Box::new(create_simple_mask),
+                0,
+            ))
+        }),
+        ("Borg".to_string(), |sizes| Box::new(Borg::new(sizes))),
+    ];
     let input_dirs: Vec<PathBuf> = vec![
         PathBuf::from("data/extracted/postgres-15.2-extracted"),
         PathBuf::from("data/extracted/postgres-15.3-extracted"),

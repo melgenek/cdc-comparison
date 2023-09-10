@@ -2,7 +2,6 @@ use crate::chunkers::Chunker;
 use crate::hashes::RollingHash;
 use crate::hashes::RollingHashBuilder;
 use crate::util::chunk_sizes::ChunkSizes;
-use crate::util::logarithm2;
 use crate::util::mask_builder::MaskBuilder;
 use crate::util::unsigned_integer::UnsignedInteger;
 
