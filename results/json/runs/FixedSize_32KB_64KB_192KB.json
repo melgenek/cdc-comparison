@@ -1,0 +1,1 @@
+{"name":"FixedSize","chunkSizes":"32KB/64KB/192KB","dedupRatio":"0.191%","durationSeconds":"3.9","resultChunkSizes":"63.99KB±0.66KB","resultChunkCount":12073,"minChunkSize":"8.00KB","maxChunkSize":"64.00KB","intervalSizes":"57.84MB±81.93MB","intervalCount":13,"minIntervalSize":"64.00KB","maxIntervalSize":"194.06MB"}

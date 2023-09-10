@@ -1,0 +1,1 @@
+{"name":"Pci min","chunkSizes":"128KB/256KB/384KB","dedupRatio":"0.083%","durationSeconds":"22.0","resultChunkSizes":"371.61KB±51.66KB","resultChunkCount":2079,"minChunkSize":"49.09KB","maxChunkSize":"384.00KB","intervalSizes":"161.67MB±140.60MB","intervalCount":4,"minIntervalSize":"512.00KB","maxIntervalSize":"361.46MB"}

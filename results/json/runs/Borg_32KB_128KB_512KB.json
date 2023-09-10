@@ -1,0 +1,1 @@
+{"name":"Borg","chunkSizes":"32KB/128KB/512KB","dedupRatio":"3.310%","durationSeconds":"15.9","resultChunkSizes":"159.39KB±116.58KB","resultChunkCount":4847,"minChunkSize":"32.02KB","maxChunkSize":"512.00KB","intervalSizes":"7.26MB±26.20MB","intervalCount":90,"minIntervalSize":"33.75KB","maxIntervalSize":"228.16MB"}

@@ -9,64 +9,13 @@
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
 </head>
 <body>
-<table class="table">
-    <thead>
-    <tr>
-        <th>Name</th>
-        <th>Chunk Sizes</th>
-        <th>Dedup ratio</th>
-        <th>Chunk count</th>
-        <th>Chunk sizes</th>
-        <th>Min chunk size</th>
-        <th>Max chunk size</th>
-        <th>Interval count</th>
-        <th>Interval sizes</th>
-        <th>Min interval size</th>
-        <th>Max interval size</th>
-    </tr>
-    </thead>
-    <tbody>
-
-    </tbody>
-</table>
+<table class="table"></table>
 
 <script>
-    const dt = new simpleDatatables.DataTable("table", {
-        perPage: 20,
-        searchable: true,
-        columns: [],
-        tableRender: (_data, table, type) => {
-            if (type === "print") {
-                return table
-            }
-            const tHead = table.childNodes[0]
-            const filterHeaders = {
-                nodeName: "TR",
-                childNodes: tHead.childNodes[0].childNodes.map(
-                    (_th, index) => ({
-                        nodeName: "TH",
-                        childNodes: [
-                            {
-                                nodeName: "INPUT",
-                                attributes: {
-                                    class: "datatable-input",
-                                    type: "search",
-                                    "data-columns": `[${index}]`
-                                }
-                            }
-                        ]
-                    })
-                )
-            }
-            tHead.childNodes.push(filterHeaders)
-            return table
-        }
-    })
-
     async function load() {
         const json = await (await fetch('../json/merged.json')).json();
-        for (const result of json.results) {
-            dt.rows.add([
+        let rows = json.results.map(result => {
+            return [
                 result.name,
                 result.chunkSizes,
                 result.dedupRatio,
@@ -78,8 +27,56 @@
                 result.intervalSizes,
                 result.minIntervalSize,
                 result.maxIntervalSize,
-            ]);
-        }
+            ];
+        });
+        const dt = new simpleDatatables.DataTable("table", {
+            perPageSelect: [20, 50, 100],
+            perPage: 20,
+            searchable: true,
+            columns: [],
+            data: {
+                headings: [
+                    "Name",
+                    "Chunk Sizes",
+                    "Dedup ratio",
+                    "Chunk count",
+                    "Chunk sizes",
+                    "Min chunk size",
+                    "Max chunk size",
+                    "Interval count",
+                    "Interval sizes",
+                    "Min interval size",
+                    "Max interval size"
+                ],
+                data: rows
+            },
+            tableRender: (_data, table, type) => {
+                if (type === "print") {
+                    return table
+                }
+                const tHead = table.childNodes[0]
+                const filterHeaders = {
+                    nodeName: "TR",
+                    childNodes: tHead.childNodes[0].childNodes.map(
+                        (_th, index) => ({
+                            nodeName: "TH",
+                            childNodes: [
+                                {
+                                    nodeName: "INPUT",
+                                    attributes: {
+                                        class: "datatable-input",
+                                        type: "search",
+                                        "data-columns": `[${index}]`
+                                    }
+                                }
+                            ]
+                        })
+                    )
+                }
+                tHead.childNodes.push(filterHeaders)
+                return table
+            }
+        })
     }
 
     load();

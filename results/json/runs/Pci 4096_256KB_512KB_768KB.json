@@ -1,0 +1,1 @@
+{"name":"Pci 4096","chunkSizes":"256KB/512KB/768KB","dedupRatio":"0.292%","durationSeconds":"14.9","resultChunkSizes":"571.43KB±210.47KB","resultChunkCount":1352,"minChunkSize":"83.75KB","maxChunkSize":"768.00KB","intervalSizes":"86.19MB±137.15MB","intervalCount":5,"minIntervalSize":"256.00KB","maxIntervalSize":"355.66MB"}

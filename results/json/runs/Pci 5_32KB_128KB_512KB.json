@@ -1,0 +1,1 @@
+{"name":"Pci 5","chunkSizes":"32KB/128KB/512KB","dedupRatio":"1.609%","durationSeconds":"15.1","resultChunkSizes":"65.39KB±103.72KB","resultChunkCount":11815,"minChunkSize":"32.00KB","maxChunkSize":"512.00KB","intervalSizes":"6.12MB±16.42MB","intervalCount":80,"minIntervalSize":"32.00KB","maxIntervalSize":"74.42MB"}

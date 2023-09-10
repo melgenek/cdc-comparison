@@ -1,0 +1,1 @@
+{"name":"Restic","chunkSizes":"128KB/256KB/1MB","dedupRatio":"2.431%","durationSeconds":"14.6","resultChunkSizes":"226.43KB±161.73KB","resultChunkCount":3412,"minChunkSize":"13.61KB","maxChunkSize":"1.00MB","intervalSizes":"12.87MB±22.90MB","intervalCount":29,"minIntervalSize":"128.00KB","maxIntervalSize":"93.61MB"}

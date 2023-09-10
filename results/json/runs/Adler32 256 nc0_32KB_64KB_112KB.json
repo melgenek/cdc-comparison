@@ -1,0 +1,1 @@
+{"name":"Adler32 256 nc0","chunkSizes":"32KB/64KB/112KB","dedupRatio":"0.058%","durationSeconds":"22.4","resultChunkSizes":"111.98KB±1.12KB","resultChunkCount":6899,"minChunkSize":"24.00KB","maxChunkSize":"112.00KB","intervalSizes":"116.01MB±96.08MB","intervalCount":5,"minIntervalSize":"112.00KB","maxIntervalSize":"219.10MB"}

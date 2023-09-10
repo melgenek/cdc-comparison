@@ -1,0 +1,1 @@
+{"name":"Adler32 1024 nc1","chunkSizes":"32KB/64KB/80KB","dedupRatio":"0.135%","durationSeconds":"19.3","resultChunkSizes":"79.99KB±0.51KB","resultChunkCount":9658,"minChunkSize":"40.00KB","maxChunkSize":"80.00KB","intervalSizes":"62.08MB±88.67MB","intervalCount":9,"minIntervalSize":"80.00KB","maxIntervalSize":"218.79MB"}

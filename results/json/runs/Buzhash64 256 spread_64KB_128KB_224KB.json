@@ -1,0 +1,1 @@
+{"name":"Buzhash64 256 spread","chunkSizes":"64KB/128KB/224KB","dedupRatio":"3.646%","durationSeconds":"11.9","resultChunkSizes":"115.36KB±53.18KB","resultChunkCount":6697,"minChunkSize":"36.22KB","maxChunkSize":"224.00KB","intervalSizes":"6.08MB±13.53MB","intervalCount":85,"minIntervalSize":"64.00KB","maxIntervalSize":"61.07MB"}

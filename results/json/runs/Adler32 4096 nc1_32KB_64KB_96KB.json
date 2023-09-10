@@ -1,0 +1,1 @@
+{"name":"Adler32 4096 nc1","chunkSizes":"32KB/64KB/96KB","dedupRatio":"0.112%","durationSeconds":"22.1","resultChunkSizes":"95.98KB±1.11KB","resultChunkCount":8049,"minChunkSize":"8.00KB","maxChunkSize":"96.00KB","intervalSizes":"83.65MB±94.40MB","intervalCount":9,"minIntervalSize":"96.00KB","maxIntervalSize":"218.73MB"}

@@ -1,0 +1,1 @@
+{"name":"Pci 512","chunkSizes":"16KB/64KB/256KB","dedupRatio":"2.371%","durationSeconds":"20.8","resultChunkSizes":"97.46KB±93.19KB","resultChunkCount":7927,"minChunkSize":"16.00KB","maxChunkSize":"256.00KB","intervalSizes":"3.97MB±15.09MB","intervalCount":130,"minIntervalSize":"16.00KB","maxIntervalSize":"113.07MB"}
