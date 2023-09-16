@@ -17,7 +17,7 @@ use crate::chunkers::ported::pci::Pci;
 use crate::chunkers::ported::restic::ResticCdc;
 use crate::chunkers::{new_adler_u32, new_buz, new_buz_spread_mask, new_gear_u128, new_polynomial};
 use crate::hashes::polynomial_hash::polynomial::Pol;
-use crate::hashes::tables::{sha256_u128_table, sha256_u32_table, sha256_u64_table};
+use crate::hashes::tables::{buz_table, sha256_u128_table, sha256_u32_table, sha256_u64_table};
 use crate::util::MB;
 
 mod benchmark;
@@ -99,6 +99,13 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Buzhash32 4096".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 4096, 0))),
         ("Buzhash32 4096 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 4096, 1))),
         ("Buzhash32 4096 nc2".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 4096, 2))),
+        // Buzhash 32 ideal table
+        ("Buzhash32i 63".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 63, 0))),
+        ("Buzhash32i 63 nc1".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 63, 1))),
+        ("Buzhash32i 63 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u32>(sizes, buz_table(), 63, 0))),
+        ("Buzhash32i 64".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 64, 0))),
+        ("Buzhash32i 64 nc1".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 64, 1))),
+        ("Buzhash32i 64 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u32>(sizes, buz_table(), 64, 0))),
         // Buzhash 64
         ("Buzhash64 31".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 31, 0))),
         ("Buzhash64 31 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 31, 1))),
