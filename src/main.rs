@@ -43,6 +43,7 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Borg".to_string(), |sizes| Box::new(Borg::new(sizes))),
         ("Casync".to_string(), |sizes| Box::new(Casync::new(sizes))),
         // fastcdc
+        ("FastCdc2016 nc3".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 3))),
         ("FastCdc2016".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 2))),
         ("FastCdc2016 nc1".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 1))),
         ("FastCdc2016 nc0".to_string(), |sizes| Box::new(FastCdc2016::new(sizes, 0))),
