@@ -9,11 +9,20 @@
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
 </head>
 <body>
+<a href="javascript:void(0)" onclick="load('merged');">All</a>
+<a href="javascript:void(0)" onclick="load('64KB');">64KB</a>
+<a href="javascript:void(0)" onclick="load('128KB');">128KB</a>
+<a href="javascript:void(0)" onclick="load('256KB');">256KB</a>
+<a href="javascript:void(0)" onclick="load('512KB');">512KB</a>
+<a href="javascript:void(0)" onclick="load('1MB');">1MB</a>
+<a href="javascript:void(0)" onclick="load('2MB');">2MB</a>
+
 <table class="table"></table>
 
 <script>
-    async function load() {
-        const json = await (await fetch('../json/merged.json')).json();
+    let datatable;
+    async function load(file) {
+        const json = await (await fetch(`../json/${file}.json`)).json();
         let rows = json.results.map(result => {
             return [
                 result.name,
@@ -29,7 +38,10 @@
                 result.maxIntervalSize,
             ];
         });
-        const dt = new simpleDatatables.DataTable("table", {
+        if(datatable) {
+            datatable.destroy();
+        }
+        datatable = new simpleDatatables.DataTable("table", {
             perPageSelect: [20, 50, 100],
             perPage: 20,
             searchable: true,
@@ -85,8 +97,6 @@
             }
         })
     }
-
-    load();
 
 </script>
 </body>

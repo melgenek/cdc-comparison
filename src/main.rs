@@ -99,13 +99,13 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Buzhash32 4096".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 4096, 0))),
         ("Buzhash32 4096 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 4096, 1))),
         ("Buzhash32 4096 nc2".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u32_table(), 4096, 2))),
-        // Buzhash 32 ideal table
-        ("Buzhash32i 63".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 63, 0))),
-        ("Buzhash32i 63 nc1".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 63, 1))),
-        ("Buzhash32i 63 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u32>(sizes, buz_table(), 63, 0))),
-        ("Buzhash32i 64".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 64, 0))),
-        ("Buzhash32i 64 nc1".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 64, 1))),
-        ("Buzhash32i 64 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u32>(sizes, buz_table(), 64, 0))),
+        // Buzhash 32 balanced table
+        ("Buzhash32b 63".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 63, 0))),
+        ("Buzhash32b 63 nc1".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 63, 1))),
+        ("Buzhash32b 63 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u32>(sizes, buz_table(), 63, 0))),
+        ("Buzhash32b 64".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 64, 0))),
+        ("Buzhash32b 64 nc1".to_string(), |sizes| Box::new(new_buz::<u32>(sizes, buz_table(), 64, 1))),
+        ("Buzhash32b 64 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u32>(sizes, buz_table(), 64, 0))),
         // Buzhash 64
         ("Buzhash64 31".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 31, 0))),
         ("Buzhash64 31 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 31, 1))),
@@ -134,6 +134,13 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Buzhash64 4096".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 4096, 0))),
         ("Buzhash64 4096 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 4096, 1))),
         ("Buzhash64 4096 nc2".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u64_table(), 4096, 2))),
+        // Buzhash 64 balanced table
+        ("Buzhash64b 127".to_string(), |sizes| Box::new(new_buz::<u64>(sizes, buz_table(), 127, 0))),
+        ("Buzhash64b 127 nc1".to_string(), |sizes| Box::new(new_buz::<u64>(sizes, buz_table(), 127, 1))),
+        ("Buzhash64b 127 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u64>(sizes, buz_table(), 127, 0))),
+        ("Buzhash64b 128".to_string(), |sizes| Box::new(new_buz::<u64>(sizes, buz_table(), 128, 0))),
+        ("Buzhash64b 128 nc1".to_string(), |sizes| Box::new(new_buz::<u64>(sizes, buz_table(), 128, 1))),
+        ("Buzhash64b 128 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u64>(sizes, buz_table(), 128, 0))),
         // Buzhash 128
         ("Buzhash128 31".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 31, 0))),
         ("Buzhash128 31 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 31, 1))),
@@ -163,6 +170,13 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Buzhash128 4096".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 4096, 0))),
         ("Buzhash128 4096 nc1".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 4096, 1))),
         ("Buzhash128 4096 nc2".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 4096, 2))),
+        // Buzhash 128 balanced table
+        ("Buzhash128b 255".to_string(), |sizes| Box::new(new_buz::<u128>(sizes, buz_table(), 255, 0))),
+        ("Buzhash128b 255 nc1".to_string(), |sizes| Box::new(new_buz::<u128>(sizes, buz_table(), 255, 1))),
+        ("Buzhash128b 255 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u128>(sizes, buz_table(), 255, 0))),
+        ("Buzhash128b 256".to_string(), |sizes| Box::new(new_buz::<u128>(sizes, buz_table(), 256, 0))),
+        ("Buzhash128b 256 nc1".to_string(), |sizes| Box::new(new_buz::<u128>(sizes, buz_table(), 256, 1))),
+        ("Buzhash128b 256 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u128>(sizes, buz_table(), 256, 0))),
         // Gear
         ("Gear128 nc0".to_string(), |sizes| Box::new(new_gear_u128(sizes, 0))),
         ("Gear128 nc1".to_string(), |sizes| Box::new(new_gear_u128(sizes, 1))),

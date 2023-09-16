@@ -1,3 +1,6 @@
+use itertools::Itertools;
+use regex::Regex;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
@@ -9,7 +12,7 @@ use crate::benchmark::benchmark_result::AlgorithmResult;
 use crate::util::chunk_sizes::ChunkSizes;
 use crate::util::{read_files_in_dir_sorted_by_name, size_to_str, size_to_str_f64};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct Result {
     name: String,
@@ -45,8 +48,32 @@ fn read_single_report(path: PathBuf) -> std::io::Result<Result> {
 
 pub fn merge_results_dir(output_dir: &Path) -> std::io::Result<()> {
     let report_paths = read_files_in_dir_sorted_by_name(&output_dir.join("runs"));
-    let reports: std::io::Result<Vec<Result>> = report_paths.into_iter().map(read_single_report).collect();
-    let merged_report = MergedReport { results: reports? };
+    let results = report_paths.into_iter().map(read_single_report).collect::<std::io::Result<Vec<Result>>>()?;
+    merge_buz(output_dir, results.clone())?;
+    merge_all(output_dir, results.clone())?;
+    Ok(())
+}
+
+fn merge_buz(output_dir: &Path, results: Vec<Result>) -> std::io::Result<()> {
+    let regexp = Regex::new(r"/(.*)/").unwrap();
+    let avg_size_to_results: HashMap<String, Vec<Result>> = results
+        .into_iter()
+        .into_grouping_map_by(|v| regexp.captures(v.chunk_sizes.as_str()).unwrap().get(1).unwrap().as_str().to_string())
+        .collect();
+    for (avg_size, results) in avg_size_to_results {
+        let merged_report = MergedReport { results };
+        let merged_file = fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(output_dir.join(format!("{}.json", avg_size)))?;
+        serde_json::to_writer(merged_file, &merged_report)?;
+    }
+    Ok(())
+}
+
+fn merge_all(output_dir: &Path, results: Vec<Result>) -> std::io::Result<()> {
+    let merged_report = MergedReport { results };
     let merged_file =
         fs::OpenOptions::new().write(true).truncate(true).create(true).open(output_dir.join("merged.json"))?;
     serde_json::to_writer(merged_file, &merged_report)?;
