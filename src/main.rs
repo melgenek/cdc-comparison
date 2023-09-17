@@ -142,6 +142,7 @@ fn evaluate_chunkers() -> std::io::Result<()> {
         ("Buzhash64b 127 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u64>(sizes, buz_table(), 127, 0))),
         ("Buzhash64b 128".to_string(), |sizes| Box::new(new_buz::<u64>(sizes, buz_table(), 128, 0))),
         ("Buzhash64b 128 nc1".to_string(), |sizes| Box::new(new_buz::<u64>(sizes, buz_table(), 128, 1))),
+        ("Buzhash64b 128 nc2".to_string(), |sizes| Box::new(new_buz::<u64>(sizes, buz_table(), 128, 2))),
         ("Buzhash64b 128 spread".to_string(), |sizes| Box::new(new_buz_spread_mask::<u64>(sizes, buz_table(), 128, 0))),
         // Buzhash 128
         ("Buzhash128 31".to_string(), |sizes| Box::new(new_buz(sizes, sha256_u128_table(), 31, 0))),

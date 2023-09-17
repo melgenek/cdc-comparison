@@ -88,6 +88,10 @@ impl AlgorithmResult {
         self.chunk_count
     }
 
+    pub fn interval_sizes(&self) -> Vec<usize> {
+        self.interval_sizes.clone()
+    }
+
     pub fn interval_count(&self) -> usize {
         self.interval_sizes.len()
     }
@@ -144,5 +148,9 @@ impl AlgorithmResult {
 
     pub fn max_chunk_size(&self) -> f64 {
         self.chunks.values().max().map(|v| *v).unwrap() as f64
+    }
+
+    pub fn result_chunk_sizes(&self) -> Vec<usize> {
+        self.chunks.values().map(|v| *v).collect()
     }
 }

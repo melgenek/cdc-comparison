@@ -20,9 +20,13 @@ struct Result {
     dedup_ratio: String,
     duration_seconds: String,
     result_chunk_sizes: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    all_result_chunk_sizes: Option<Vec<usize>>,
     result_chunk_count: usize,
     min_chunk_size: String,
     max_chunk_size: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    all_interval_sizes: Option<Vec<usize>>,
     interval_sizes: String,
     interval_count: usize,
     min_interval_size: String,
@@ -93,6 +97,7 @@ pub fn write_result_json(output_dir: &Path, result: &AlgorithmResult) -> std::io
         chunk_sizes: result.chunk_sizes().to_string(),
         duration_seconds: format!("{:.1}", result.duration_seconds()),
         dedup_ratio: format!("{:.3}%", result.dedup_ratio()),
+        all_result_chunk_sizes: Some(result.result_chunk_sizes()),
         result_chunk_sizes: format!(
             "{}±{}",
             size_to_str_f64(result.chunk_size_avg()),
@@ -101,6 +106,7 @@ pub fn write_result_json(output_dir: &Path, result: &AlgorithmResult) -> std::io
         result_chunk_count: result.chunk_count(),
         min_chunk_size: size_to_str_f64(result.min_chunk_size()),
         max_chunk_size: size_to_str_f64(result.max_chunk_size()),
+        all_interval_sizes: Some(result.interval_sizes()),
         interval_sizes: format!(
             "{}±{}",
             size_to_str_f64(result.interval_size_avg()),

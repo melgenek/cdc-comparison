@@ -7,6 +7,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js" charset="utf-8"></script>
 </head>
 <body>
 <a href="javascript:void(0)" onclick="load('merged');">All</a>
@@ -16,56 +17,107 @@
 <a href="javascript:void(0)" onclick="load('512KB');">512KB</a>
 <a href="javascript:void(0)" onclick="load('1MB');">1MB</a>
 <a href="javascript:void(0)" onclick="load('2MB');">2MB</a>
-
-<table class="table"></table>
-
+<table id="table"></table>
+<table id="histogram"></table>
 <script>
     let datatable;
+
     async function load(file) {
-        const json = await (await fetch(`../json/${file}.json`)).json();
-        let rows = json.results.map(result => {
-            return [
-                result.name,
-                result.chunkSizes,
-                result.dedupRatio,
-                result.resultChunkCount,
-                result.resultChunkSizes,
-                result.minChunkSize,
-                result.maxChunkSize,
-                result.intervalCount,
-                result.intervalSizes,
-                result.minIntervalSize,
-                result.maxIntervalSize,
-            ];
-        });
-        if(datatable) {
+        const results = (await (await fetch(`../json/${file}.json`)).json()).results;
+        let rows = results
+            .map(result => {
+                return [
+                    {
+                        data: result.name,
+                        text: result.name,
+                    },
+                    {
+                        data: result.chunkSizes,
+                        text: result.chunkSizes
+                    },
+                    {
+                        data: result.dedupRatio,
+                        text: result.dedupRatio
+                    },
+                    {
+                        data: result.resultChunkCount,
+                        text: result.resultChunkCount.toString()
+                    },
+                    {
+                        data: result.allResultChunkSizes,
+                        text: result.resultChunkSizes
+                    },
+                    {
+                        data: result.minChunkSize,
+                        text: result.minChunkSize.toString(),
+                    },
+                    {
+                        data: result.maxChunkSize,
+                        text: result.maxChunkSize.toString()
+                    },
+                    {
+                        data: result.intervalCount,
+                        text: result.intervalCount.toString()
+                    },
+                    {
+                        data: result.allIntervalSizes,
+                        text: result.intervalSizes
+                    },
+                    {
+                        data: result.minIntervalSize,
+                        text: result.minIntervalSize.toString()
+                    },
+                    {
+                        data: result.maxIntervalSize,
+                        text: result.maxIntervalSize.toString()
+                    }
+                ];
+            });
+        if (datatable) {
             datatable.destroy();
         }
-        datatable = new simpleDatatables.DataTable("table", {
+        datatable = new simpleDatatables.DataTable("#table", {
             perPageSelect: [20, 50, 100],
             perPage: 20,
             searchable: true,
             searchQuerySeparator: "<>",
             searchAnd: true,
+            type: "string",
             columns: [
                 {
                     select: 2,
                     sort: "desc"
+                },
+                {
+                    select: 4,
+                    render: function (data, cell, dataIndex, _cellIndex) {
+                        if (data) {
+                            return `<a href="javascript:void(0)" onclick="renderChart('${data}');">${cell.childNodes[0].data}</a>`;
+                        }
+                    }
+                },
+                {
+                    select: 8,
+                    render: function (data, cell, dataIndex, _cellIndex) {
+                        if (data) {
+                            return `<a href="javascript:void(0)" onclick="renderChart('${data}');">${cell.childNodes[0].data}</a>`;
+                        }
+                    }
                 }
             ],
             data: {
                 headings: [
-                    "Name",
-                    "Chunk Sizes",
-                    "Dedup ratio",
-                    "Chunk count",
-                    "Chunk sizes",
-                    "Min chunk size",
-                    "Max chunk size",
-                    "Interval count",
-                    "Interval sizes",
-                    "Min interval size",
-                    "Max interval size"
+                    {data: "Name"},
+                    {data: "Chunk Sizes"},
+                    {data: "Dedup ratio"},
+                    {data: "Chunk count"},
+                    {data: "Chunk sizes"},
+                    {data: "Min chunk size"},
+                    {data: "Max chunk size"},
+                    {data: "Interval count"},
+                    {data: "Interval sizes"},
+                    {data: "Min interval size"},
+                    {data: "Max interval size"}
                 ],
                 data: rows
             },
@@ -96,6 +148,19 @@
                 return table
             }
         })
+    }
+
+    function renderChart(values) {
+        Plotly.newPlot("histogram", [
+            {
+                x: values.split(","),
+                type: "histogram",
+            }
+        ], {
+            autosize: false,
+            width: 1000,
+            height: 600
+        });
     }
 
 </script>
