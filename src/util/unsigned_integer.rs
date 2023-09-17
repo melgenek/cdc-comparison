@@ -24,6 +24,7 @@ pub trait UnsignedInteger:
     fn signed_bits_count() -> usize {
         Self::bits_count() - 1
     }
+    fn rotate_left(self, n: u32) -> Self;
 }
 
 impl UnsignedInteger for u32 {
@@ -37,6 +38,10 @@ impl UnsignedInteger for u32 {
 
     fn bits_count() -> usize {
         32
+    }
+
+    fn rotate_left(self, n: u32) -> Self {
+        u32::rotate_left(self, n)
     }
 }
 
@@ -52,6 +57,10 @@ impl UnsignedInteger for u64 {
     fn bits_count() -> usize {
         64
     }
+
+    fn rotate_left(self, n: u32) -> Self {
+        u64::rotate_left(self, n)
+    }
 }
 
 impl UnsignedInteger for u128 {
@@ -64,6 +73,10 @@ impl UnsignedInteger for u128 {
     }
 
     fn bits_count() -> usize {
-        64
+        128
+    }
+
+    fn rotate_left(self, n: u32) -> Self {
+        u128::rotate_left(self, n)
     }
 }

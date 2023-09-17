@@ -1,0 +1,1 @@
+{"name":"Buzhash128b 512 spread","chunkSizes":"32KB/128KB/512KB","dedupRatio":"3.941%","durationSeconds":"17.4","resultChunkSizes":"108.43KB±96.45KB","resultChunkCount":7125,"minChunkSize":"2.21KB","maxChunkSize":"512.00KB","intervalSizes":"4.17MB±11.75MB","intervalCount":136,"minIntervalSize":"2.21KB","maxIntervalSize":"73.16MB"}
